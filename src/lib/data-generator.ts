@@ -1,166 +1,14 @@
 import type { GenerationParams, Student, Semester, Grade } from './types';
-
-const DEPARTMENTS = ["CSE", "EEE", "BBA"];
-
-const SUBJECTS: Record<string, string[]> = {
-  CSE: [
-    "Introduction to Programming",
-    "Structured Programming",
-    "Object Oriented Programming",
-    "Data Structures",
-    "Algorithms",
-    "Discrete Mathematics",
-    "Linear Algebra",
-    "Probability and Statistics",
-    "Numerical Methods",
-    "Digital Logic Design",
-    "Computer Organization",
-    "Microprocessors",
-    "Operating Systems",
-    "Database Systems",
-    "Computer Networks",
-    "Data Communication",
-    "Software Engineering",
-    "Software Testing",
-    "Web Programming",
-    "Mobile Application Development",
-    "Artificial Intelligence",
-    "Machine Learning",
-    "Neural Networks",
-    "Computer Graphics",
-    "Image Processing",
-    "Pattern Recognition",
-    "Human Computer Interaction",
-    "Compiler Design",
-    "Theory of Computation",
-    "Distributed Systems",
-    "Cloud Computing",
-    "Cyber Security",
-    "Cryptography",
-    "Information Security",
-    "Embedded Systems",
-    "Real Time Systems",
-    "Internet of Things",
-    "Big Data Analytics",
-    "Data Mining",
-    "Bioinformatics",
-    "Game Development",
-    "Natural Language Processing",
-    "Digital Signal Processing",
-    "Advanced Algorithms",
-    "Advanced Database Systems",
-    "Research Methodology",
-    "Project Management",
-    "Capstone Project"
-],
-  EEE: [
-    "Basic Electrical Engineering",
-    "Electrical Circuits",
-    "Circuit Theory",
-    "Electronic Devices",
-    "Basic Electronics",
-    "Analog Electronics",
-    "Digital Electronics",
-    "Digital Logic Design",
-    "Signals and Systems",
-    "Signal Processing",
-    "Control Systems",
-    "Microprocessors",
-    "Microcontrollers",
-    "Embedded Systems",
-    "Power Systems I",
-    "Power Systems II",
-    "Electrical Machines I",
-    "Electrical Machines II",
-    "Power Electronics",
-    "Renewable Energy Systems",
-    "High Voltage Engineering",
-    "Communication Engineering",
-    "Data Communication",
-    "Telecommunication Systems",
-    "Electromagnetic Fields",
-    "Microwave Engineering",
-    "VLSI Design",
-    "Nano Electronics",
-    "Instrumentation",
-    "Measurement and Sensors",
-    "Robotics",
-    "Industrial Electronics",
-    "Energy Conversion",
-    "Power Plant Engineering",
-    "Switchgear and Protection",
-    "Transmission and Distribution",
-    "Electric Drives",
-    "SCADA Systems",
-    "Industrial Automation",
-    "Engineering Mathematics",
-    "Linear Algebra",
-    "Probability and Statistics",
-    "Numerical Methods",
-    "Research Methodology",
-    "Technical Writing",
-    "Project Management",
-    "Final Year Project"
-],
-  BBA: [
-    "Principles of Management",
-    "Principles of Accounting",
-    "Financial Accounting",
-    "Managerial Accounting",
-    "Microeconomics",
-    "Macroeconomics",
-    "Business Mathematics",
-    "Business Statistics",
-    "Business Communication",
-    "Business Ethics",
-    "Marketing Principles",
-    "Consumer Behavior",
-    "Marketing Research",
-    "Financial Management",
-    "Corporate Finance",
-    "Banking and Insurance",
-    "Investment Analysis",
-    "Human Resource Management",
-    "Organizational Behavior",
-    "Operations Management",
-    "Supply Chain Management",
-    "Production Management",
-    "Entrepreneurship Development",
-    "Small Business Management",
-    "Business Law",
-    "Labor Law",
-    "International Business",
-    "International Trade",
-    "Strategic Management",
-    "Management Information Systems",
-    "E-Commerce",
-    "Digital Marketing",
-    "Business Analytics",
-    "Data Analysis for Business",
-    "Business Research Methods",
-    "Project Management",
-    "Risk Management",
-    "Taxation",
-    "Auditing",
-    "Cost Accounting",
-    "Public Finance",
-    "Economic Development",
-    "Corporate Governance",
-    "Leadership Studies",
-    "Negotiation and Conflict Management",
-    "Internship",
-    "Capstone Project"
-]
-};
+import { DEPARTMENTS, SUBJECTS } from './subjects';
 
 function generateSubjectPool(department: string): string[] {
     const baseSubjects = SUBJECTS[department];
     const subjectPool: string[] = [];
     const totalSubjects = 50; 
     for (let i = 0; i < totalSubjects; i++) {
-        subjectPool.push(`${baseSubjects[i % baseSubjects.length]} ${Math.floor(i / baseSubjects.length) + 1}`);
+        subjectPool.push(`${baseSubjects[i % baseSubjects.length]}`);
     }
-    return subjectPool;
+    return [...new Set(subjectPool)];
 }
 
 
@@ -239,17 +87,19 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
   for (let sid = 1; sid <= params.numStudents; sid++) {
     const department = choice(DEPARTMENTS);
     const performance = pickPerformanceGroup(params);
-    const subjectPool = shuffle(generateSubjectPool(department));
+    const fullSubjectPool = generateSubjectPool(department);
+    const studentSubjectPool = shuffle([...fullSubjectPool]).slice(0, 50);
 
     const semesters: Record<string, Semester> = {};
     let semesterId = 1;
+    let subjectsToAssign = [...studentSubjectPool];
 
-    while (subjectPool.length > 0) {
+    while (subjectsToAssign.length > 0) {
       const credits = creditLoad(params);
-      const subjectCount = Math.min(Math.ceil(credits / params.creditsPerSubject), subjectPool.length);
+      const subjectCount = Math.min(Math.ceil(credits / params.creditsPerSubject), subjectsToAssign.length);
       const actualCredits = subjectCount * params.creditsPerSubject;
 
-      const semesterSubjects = subjectPool.splice(0, subjectCount);
+      const semesterSubjects = subjectsToAssign.splice(0, subjectCount);
 
       const impact = creditImpact(actualCredits, params);
       const semesterGpa = baseGpa(performance) * (1 + impact);

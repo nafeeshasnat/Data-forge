@@ -1,0 +1,62 @@
+export const DEPARTMENTS = ["CSE", "EEE", "BBA"];
+
+export const SUBJECTS: Record<string, string[]> = {
+  CSE: [
+    "Introduction to Programming", "Structured Programming", "Object Oriented Programming", 
+    "Data Structures", "Algorithms", "Discrete Mathematics", "Linear Algebra", 
+    "Probability and Statistics", "Numerical Methods", "Digital Logic Design", 
+    "Computer Organization", "Microprocessors", "Operating Systems", "Database Systems", 
+    "Computer Networks", "Data Communication", "Software Engineering", "Software Testing", 
+    "Web Programming", "Mobile Application Development", "Artificial Intelligence", 
+    "Machine Learning", "Neural Networks", "Computer Graphics", "Image Processing", 
+    "Pattern Recognition", "Human Computer Interaction", "Compiler Design", 
+    "Theory of Computation", "Distributed Systems", "Cloud Computing", "Cyber Security", 
+    "Cryptography", "Information Security", "Embedded Systems", "Real Time Systems", 
+    "Internet of Things", "Big Data Analytics", "Data Mining", "Bioinformatics", 
+    "Game Development", "Natural Language Processing", "Digital Signal Processing", 
+    "Advanced Algorithms", "Advanced Database Systems", "Research Methodology", 
+    "Project Management", "Capstone Project", "Intro to Quantum Computing", "Advanced Web Tech",
+    "Robotics Process Automation", "Blockchain Fundamentals", "Advanced OS", "Parallel Computing",
+    "High Performance Computing", "Advanced Computer Architecture", "Network Security",
+    "Wireless Networks", "Cryptography and Network Security", "Digital Forensics",
+    "Ethical Hacking", "Cloud Native Applications", "DevOps"
+  ],
+  EEE: [
+    "Basic Electrical Engineering", "Electrical Circuits", "Circuit Theory", 
+    "Electronic Devices", "Basic Electronics", "Analog Electronics", "Digital Electronics", 
+    "Digital Logic Design", "Signals and Systems", "Signal Processing", "Control Systems", 
+    "Microprocessors", "Microcontrollers", "Embedded Systems", "Power Systems I", 
+    "Power Systems II", "Electrical Machines I", "Electrical Machines II", "Power Electronics", 
+    "Renewable Energy Systems", "High Voltage Engineering", "Communication Engineering", 
+    "Data Communication", "Telecommunication Systems", "Electromagnetic Fields", 
+    "Microwave Engineering", "VLSI Design", "Nano Electronics", "Instrumentation", 
+    "Measurement and Sensors", "Robotics", "Industrial Electronics", "Energy Conversion", 
+    "Power Plant Engineering", "Switchgear and Protection", "Transmission and Distribution", 
+    "Electric Drives", "SCADA Systems", "Industrial Automation", "Engineering Mathematics", 
+    "Linear Algebra", "Probability and Statistics", "Numerical Methods", 
+    "Research Methodology", "Technical Writing", "Project Management", "Final Year Project",
+    "Advanced Power Systems", "Smart Grids", "Power System Protection", "FACTS Devices",
+    "Advanced Control Systems", "Non-linear Control", "Optimal Control", "Digital Signal Processing II",
+    "Biomedical Instrumentation", "Optical Fiber Communication", "Wireless Communication",
+    "Satellite Communication", "Antenna Engineering", "Advanced VLSI Design", "FPGA Design"
+  ],
+  BBA: [
+    "Principles of Management", "Principles of Accounting", "Financial Accounting", 
+    "Managerial Accounting", "Microeconomics", "Macroeconomics", "Business Mathematics", 
+    "Business Statistics", "Business Communication", "Business Ethics", "Marketing Principles", 
+    "Consumer Behavior", "Marketing Research", "Financial Management", "Corporate Finance", 
+    "Banking and Insurance", "Investment Analysis", "Human Resource Management", 
+    "Organizational Behavior", "Operations Management", "Supply Chain Management", 
+    "Production Management", "Entrepreneurship Development", "Small Business Management", 
+    "Business Law", "Labor Law", "International Business", "International Trade", 
+    "Strategic Management", "Management Information Systems", "E-Commerce", "Digital Marketing", 
+    "Business Analytics", "Data Analysis for Business", "Business Research Methods", 
+    "Project Management", "Risk Management", "Taxation", "Auditing", "Cost Accounting", 
+    "Public Finance", "Economic Development", "Corporate Governance", "Leadership Studies", 
+    "Negotiation and Conflict Management", "Internship", "Capstone Project",
+    "International Finance", "Global Marketing", "Brand Management", "Services Marketing",
+    "Sales Management", "Industrial Relations", "Compensation Management", "Training and Development",
+    "Quality Management", "Logistics Management", "Mergers and Acquisitions", "Financial Modeling",
+    "Derivatives and Risk Management", "Behavioral Finance", "Fintech"
+  ]
+};

@@ -10,6 +10,8 @@ import { PerformanceDistributionChart } from "@/components/app/charts/performanc
 import { CgpaDistributionChart } from "@/components/app/charts/cgpa-distribution-chart";
 import { HscVsCgpaChart } from "@/components/app/charts/hsc-vs-cgpa-chart";
 import { SemesterCountChart } from "@/components/app/charts/semester-count-chart";
+import { SubjectPoolDisplay } from "@/components/app/subject-pool-display";
+import { CreditDistributionChart } from "@/components/app/charts/credit-distribution-chart";
 import { Badge } from "@/components/ui/badge";
 
 interface DashboardProps {
@@ -78,9 +80,10 @@ export function Dashboard({ result, isLoading }: DashboardProps) {
         </div>
       
         <Tabs defaultValue="demographics">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="demographics">Demographics</TabsTrigger>
                 <TabsTrigger value="performance">Academic Performance</TabsTrigger>
+                <TabsTrigger value="subjects">Subjects</TabsTrigger>
             </TabsList>
             <TabsContent value="demographics" className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -93,6 +96,12 @@ export function Dashboard({ result, isLoading }: DashboardProps) {
                 <div className="grid gap-4 md:grid-cols-2">
                     <CgpaDistributionChart students={data} />
                     <HscVsCgpaChart students={data} />
+                </div>
+            </TabsContent>
+            <TabsContent value="subjects" className="space-y-4">
+                 <div className="grid gap-4 md:grid-cols-2">
+                    <SubjectPoolDisplay />
+                    <CreditDistributionChart students={data} />
                 </div>
             </TabsContent>
         </Tabs>
