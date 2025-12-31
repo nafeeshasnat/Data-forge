@@ -9,6 +9,7 @@ import { DepartmentDistributionChart } from "@/components/app/charts/department-
 import { PerformanceDistributionChart } from "@/components/app/charts/performance-distribution-chart";
 import { CgpaDistributionChart } from "@/components/app/charts/cgpa-distribution-chart";
 import { HscVsCgpaChart } from "@/components/app/charts/hsc-vs-cgpa-chart";
+import { SemesterCountChart } from "@/components/app/charts/semester-count-chart";
 import { Badge } from "@/components/ui/badge";
 
 interface DashboardProps {
@@ -82,9 +83,10 @@ export function Dashboard({ result, isLoading }: DashboardProps) {
                 <TabsTrigger value="performance">Academic Performance</TabsTrigger>
             </TabsList>
             <TabsContent value="demographics" className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <DepartmentDistributionChart summary={summary} />
                     <PerformanceDistributionChart summary={summary} />
+                    <SemesterCountChart students={data} />
                 </div>
             </TabsContent>
             <TabsContent value="performance" className="space-y-4">
