@@ -8,6 +8,17 @@ const SUBJECTS: Record<string, string[]> = {
   BBA: ["Principles of Management", "Principles of Accounting", "Financial Accounting", "Microeconomics", "Macroeconomics", "Business Statistics", "Marketing Principles", "Financial Management", "Human Resource Management", "Organizational Behavior", "Operations Management", "Business Law", "International Business", "Strategic Management", "E-Commerce"],
 };
 
+function generateSubjectPool(department: string): string[] {
+    const baseSubjects = SUBJECTS[department];
+    const subjectPool: string[] = [];
+    const totalSubjects = 50; 
+    for (let i = 0; i < totalSubjects; i++) {
+        subjectPool.push(`${baseSubjects[i % baseSubjects.length]} ${Math.floor(i / baseSubjects.length) + 1}`);
+    }
+    return subjectPool;
+}
+
+
 const GRADE_SCALE_tuples: [Grade, number][] = [
   ["A+", 4.00], ["A", 3.75], ["A-", 3.50],
   ["B+", 3.25], ["B", 3.00], ["B-", 2.75],
@@ -83,7 +94,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
   for (let sid = 1; sid <= params.numStudents; sid++) {
     const department = choice(DEPARTMENTS);
     const performance = pickPerformanceGroup(params);
-    const subjectPool = shuffle([...SUBJECTS[department]]);
+    const subjectPool = shuffle(generateSubjectPool(department));
 
     const semesters: Record<string, Semester> = {};
     let semesterId = 1;

@@ -20,8 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const defaultParams: GenerationParams = {
   numStudents: 100,
   creditsPerSubject: 3,
-  minCredit: 6,
-  stdCredit: 13,
+  minCredit: 9,
+  stdCredit: 15,
   maxCredit: 24,
   maxCreditImpact: 0.07,
   highPerformanceChance: 0.15,
