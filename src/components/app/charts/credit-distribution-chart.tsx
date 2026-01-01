@@ -21,7 +21,7 @@ export function CreditDistributionChart({ students }: { students: StudentWithCgp
 
     students.forEach(student => {
         Object.values(student.semesters).forEach(semester => {
-            const credits = semester.credit_hr;
+            const credits = semester.creditHours;
             creditCounts[credits] = (creditCounts[credits] || 0) + 1;
         })
     });

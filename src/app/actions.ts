@@ -3,6 +3,14 @@
 import { generateSyntheticData } from "@/lib/data-generator";
 import type { GenerationParams, Student, StudentWithCgpa, DataSummary, GenerationResult, Grade } from "@/lib/types";
 import { GRADE_SCALE } from "@/lib/types";
+import { DEPARTMENTS } from "@/lib/subjects";
+
+function getPerformanceGroup(cgpa: number): 'high' | 'mid' | 'fail' {
+    if (cgpa >= 3.5) return 'high';
+    if (cgpa < 2.0) return 'fail';
+    return 'mid';
+}
+
 
 function calculateStudentCgpa(student: Student): StudentWithCgpa {
   let totalPoints = 0;
@@ -14,7 +22,7 @@ function calculateStudentCgpa(student: Student): StudentWithCgpa {
     let semesterSubjectCount = 0;
 
     for (const key in semester) {
-      if (key !== 'credit_hr' && key !== 'attendancePercentage') {
+      if (key !== 'creditHours' && key !== 'attendancePercentage') {
         const grade = semester[key] as Grade;
         semesterPoints += GRADE_SCALE[grade] || 0;
         semesterSubjectCount++;
@@ -23,8 +31,8 @@ function calculateStudentCgpa(student: Student): StudentWithCgpa {
     
     if (semesterSubjectCount > 0) {
       const semesterGpa = semesterPoints / semesterSubjectCount;
-      totalPoints += semesterGpa * semester.credit_hr;
-      totalCredits += semester.credit_hr;
+      totalPoints += semesterGpa * semester.creditHours;
+      totalCredits += semester.creditHours;
     }
   }
 
@@ -47,7 +55,8 @@ function calculateSummary(students: StudentWithCgpa[]): DataSummary {
   }, {} as Record<string, number>);
 
   const performanceDistribution = students.reduce((acc, s) => {
-    acc[s.performance_group] = (acc[s.performance_group] || 0) + 1;
+    const group = getPerformanceGroup(s.cgpa);
+    acc[group] = (acc[group] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -59,6 +68,25 @@ function calculateSummary(students: StudentWithCgpa[]): DataSummary {
     performanceDistribution,
   };
 }
+
+export async function processUploadedData(data: Student[]): Promise<GenerationResult> {
+    try {
+        const studentsWithCgpa = data.map(calculateStudentCgpa);
+        const summary = calculateSummary(studentsWithCgpa);
+        const insights = "This is an analysis of the uploaded dataset. The visualizations below provide a breakdown of student demographics, academic performance, and subject distributions. You can compare this with the synthetically generated data to identify any interesting patterns or discrepancies.";
+        
+        return {
+            data: studentsWithCgpa,
+            summary,
+            insights
+        };
+
+    } catch (error) {
+        console.error("Data processing failed:", error);
+        throw new Error("Failed to process uploaded data.");
+    }
+}
+
 
 export async function generateDataAction(params: GenerationParams): Promise<GenerationResult> {
   try {

@@ -10,16 +10,18 @@ export interface GenerationParams {
 }
 
 export interface Semester {
-  credit_hr: number;
+  creditHours: number;
   attendancePercentage: number;
   [subject: string]: string | number;
 }
 
 export interface Student {
   student_id: number;
+  ssc_gpa: number;
   hsc_gpa: number;
+  gender: 'male' | 'female';
+  birth_year: number;
   department: string;
-  performance_group: 'high' | 'mid' | 'fail';
   semesters: {
     [semesterId: string]: Semester;
   };

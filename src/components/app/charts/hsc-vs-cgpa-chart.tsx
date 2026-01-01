@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Scatter, ScatterChart, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
+import { Scatter, ScatterChart, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import type { StudentWithCgpa } from "@/lib/types";
 import {
   Card,
@@ -15,12 +15,18 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
+function getPerformanceGroup(cgpa: number): 'high' | 'mid' | 'fail' {
+    if (cgpa >= 3.5) return 'high';
+    if (cgpa < 2.0) return 'fail';
+    return 'mid';
+}
+
 export function HscVsCgpaChart({ students }: { students: StudentWithCgpa[] }) {
   const chartData = React.useMemo(() => {
     return students.map(s => ({
       hsc_gpa: s.hsc_gpa,
       cgpa: s.cgpa,
-      performance: s.performance_group,
+      performance: getPerformanceGroup(s.cgpa),
     }));
   }, [students]);
   

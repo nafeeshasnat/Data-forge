@@ -52,11 +52,11 @@ function pickPerformanceGroup(params: GenerationParams): 'high' | 'mid' | 'fail'
   return "mid";
 }
 
-function generateHscGpa(group: 'high' | 'mid' | 'fail'): number {
+function generateGpa(group: 'high' | 'mid' | 'fail', min: number, max: number, mid_min: number, mid_max: number): number {
   let gpa: number;
-  if (group === "high") gpa = uniform(4.5, 5.0);
-  else if (group === "fail") gpa = uniform(2.0, 3.0);
-  else gpa = uniform(3.0, 4.5);
+  if (group === "high") gpa = uniform(max - 0.5, max);
+  else if (group === "fail") gpa = uniform(min, min + 1);
+  else gpa = uniform(mid_min, mid_max);
   return parseFloat(gpa.toFixed(2));
 }
 
@@ -106,7 +106,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
       const clampedSemesterGpa = Math.max(0.0, Math.min(4.0, semesterGpa));
 
       const semesterData: Semester = {
-        credit_hr: actualCredits,
+        creditHours: actualCredits,
         attendancePercentage: randint(65, 100)
       };
 
@@ -120,10 +120,12 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     }
 
     students.push({
-      student_id: 180104000 + sid,
-      hsc_gpa: generateHscGpa(performance),
+      student_id: 700100000 + sid,
+      ssc_gpa: generateGpa(performance, 2.0, 5.0, 3.0, 4.5),
+      hsc_gpa: generateGpa(performance, 2.0, 5.0, 3.0, 4.5),
+      gender: choice(['male', 'female']),
+      birth_year: randint(1998, 2005),
       department: department,
-      performance_group: performance,
       semesters: semesters
     });
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { GenerationParams } from "@/lib/types";
 import {
   SidebarHeader,
@@ -7,13 +8,16 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Logo } from "@/components/app/logo";
-import { Download, LoaderCircle, RefreshCw } from "lucide-react";
+import { Download, LoaderCircle, RefreshCw, Upload } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface ParameterSidebarProps {
@@ -55,6 +59,17 @@ export function ParameterSidebar({
         <Logo />
       </SidebarHeader>
       <SidebarContent className="p-0">
+         <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href="/upload">
+                  <Upload />
+                  <span>Upload Dataset</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        <Separator/>
         <SidebarGroup>
           <SidebarGroupLabel>Dataset Size</SidebarGroupLabel>
           <div className="space-y-4 p-2">
