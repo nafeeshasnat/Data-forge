@@ -1,196 +1,116 @@
 
-import type { GenerationParams } from "@/lib/types";
-import {
-  SidebarHeader,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton
-} from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { GenerationParams } from "@/lib/types";
 import { Slider } from "@/components/ui/slider";
-import { Logo } from "@/components/app/logo";
-import { Download, LoaderCircle, RefreshCw, Upload } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ThreeValueSlider } from "@/components/ui/three-value-slider";
 
 interface ParameterSidebarProps {
-  params: GenerationParams;
-  setParams: React.Dispatch<React.SetStateAction<GenerationParams>>;
-  onGenerate: () => void;
-  onDownload: () => void;
-  isLoading: boolean;
+  onGenerate: (params: GenerationParams) => void;
+  isGenerating: boolean;
 }
 
-export function ParameterSidebar({
-  params,
-  setParams,
-  onGenerate,
-  onDownload,
-  isLoading,
-}: ParameterSidebarProps) {
-  const handleParamChange =
-    (key: keyof GenerationParams) => (value: number) => {
-      setParams((prev) => ({ ...prev, [key]: value }));
-    };
+export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, isGenerating }) => {
+  const [params, setParams] = useState<GenerationParams>({
+    numStudents: 1000,
+    creditsPerSubject: 3,
+    minCredit: 12,
+    stdCredit: 15,
+    maxCredit: 21,
+    maxCreditImpact: 0.1,
+    highPerformanceChance: 0.2,
+    lowPerformanceChance: 0.1,
+    preGradScoreInfluence: 0.2,
+    exceptionPercentage: 0.1,
+  });
+
+  const [distributionPoints, setDistributionPoints] = useState([params.lowPerformanceChance * 100, (1 - params.highPerformanceChance) * 100]);
+
+  useEffect(() => {
+    const lowChance = distributionPoints[0] / 100;
+    const highChance = 1 - (distributionPoints[1] / 100);
+    setParams(prevParams => ({ ...prevParams, highPerformanceChance: highChance, lowPerformanceChance: lowChance }));
+  }, [distributionPoints]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const numValue = Number(value);
-    if (!isNaN(numValue)) {
-      setParams((prev) => ({ ...prev, [name]: numValue }));
-    }
+    setParams(prev => ({...prev, [name]: parseFloat(value)}));
   };
-
-  const handleSliderChange =
-    (key: keyof GenerationParams) => (values: number[]) => {
-      handleParamChange(key)(values[0]);
-    };
+  
+  const lowPercentage = distributionPoints[0];
+  const highPercentage = 100 - distributionPoints[1];
+  const midPercentage = 100 - lowPercentage - highPercentage;
 
   return (
-    <>
-      <SidebarHeader className="border-b">
-        <Logo />
-      </SidebarHeader>
-      <SidebarContent className="p-0">
-         <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="/upload">
-                  <Upload />
-                  <span>Upload Dataset</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        <Separator/>
-        <SidebarGroup>
-          <SidebarGroupLabel>Dataset Size</SidebarGroupLabel>
-          <div className="space-y-4 p-2">
-            <div className="space-y-2">
-              <Label htmlFor="numStudents">Number of Students</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  id="numStudents"
-                  name="numStudents"
-                  min={10}
-                  max={1000}
-                  step={10}
-                  value={[params.numStudents]}
-                  onValueChange={handleSliderChange("numStudents")}
+    <Card className="h-full flex flex-col w-96">
+      <CardHeader>
+        <CardTitle>Data Generation Parameters</CardTitle>
+      </CardHeader>
+      <CardContent className="flex-grow overflow-y-auto space-y-4">
+        <Accordion type="single" collapsible defaultValue="item-1">
+          <AccordionItem value="item-1">
+            <AccordionTrigger>Student Population</AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-2">
+                <div className="space-y-2">
+                    <Label htmlFor="numStudents">Number of Students</Label>
+                    <div className="flex items-center gap-2">
+                        <Slider id="numStudents" name="numStudents" min={100} max={5000} step={100} value={[params.numStudents]} onValueChange={(v) => setParams(p => ({...p, numStudents: v[0]}))} />
+                        <Input type="number" name="numStudents" className="w-24 h-8" value={params.numStudents} onChange={handleInputChange} step={100}/>
+                    </div>
+                </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-2">
+            <AccordionTrigger>Performance Distribution</AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+                <ThreeValueSlider
+                    min={0} max={100} step={1} value={distributionPoints} onValueChange={(v) => setDistributionPoints(v as number[])} 
                 />
-                <Input
-                  type="number"
-                  name="numStudents"
-                  className="w-20 h-8"
-                  value={params.numStudents}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-          </div>
-        </SidebarGroup>
-        <Separator />
-        <SidebarGroup>
-          <SidebarGroupLabel>Semester Workload</SidebarGroupLabel>
-          <div className="space-y-4 p-2">
-            <div className="space-y-2">
-              <Label>Credit Range Per Semester</Label>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                Min: {params.minCredit}, Std: {params.stdCredit}, Max: {params.maxCredit}
-              </div>
-            </div>
-             <div className="space-y-2">
-              <Label htmlFor="maxCreditImpact">Max GPA Impact from Workload</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  id="maxCreditImpact"
-                  name="maxCreditImpact"
-                  min={0.01}
-                  max={0.25}
-                  step={0.01}
-                  value={[params.maxCreditImpact]}
-                  onValueChange={handleSliderChange("maxCreditImpact")}
-                />
-                <Input
-                  type="number"
-                  name="maxCreditImpact"
-                  className="w-20 h-8"
-                  value={params.maxCreditImpact}
-                  onChange={handleInputChange}
-                  step={0.01}
-                />
-              </div>
-            </div>
-          </div>
-        </SidebarGroup>
-        <Separator />
-         <SidebarGroup>
-          <SidebarGroupLabel>Performance Distribution</SidebarGroupLabel>
-          <div className="space-y-4 p-2">
-            <div className="space-y-2">
-              <Label htmlFor="highPerformanceChance">High-Performer Chance (%)</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  id="highPerformanceChance"
-                  name="highPerformanceChance"
-                  min={0.01} max={1} step={0.01}
-                  value={[params.highPerformanceChance]}
-                  onValueChange={handleSliderChange("highPerformanceChance")}
-                />
-                <Input
-                  type="number"
-                  name="highPerformanceChance"
-                  className="w-20 h-8"
-                  value={params.highPerformanceChance}
-                  onChange={handleInputChange}
-                  step={0.01}
-                />
-              </div>
-            </div>
-             <div className="space-y-2">
-              <Label htmlFor="failChance">Failure-Prone Chance (%)</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  id="failChance"
-                  name="failChance"
-                  min={0.01} max={1} step={0.01}
-                  value={[params.failChance]}
-                  onValueChange={handleSliderChange("failChance")}
-                />
-                <Input
-                  type="number"
-                  name="failChance"
-                  className="w-20 h-8"
-                  value={params.failChance}
-                  onChange={handleInputChange}
-                  step={0.01}
-                />
-              </div>
-            </div>
-          </div>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter className="border-t">
-        <div className="flex flex-col gap-2">
-          <Button onClick={onGenerate} disabled={isLoading}>
-            {isLoading ? (
-              <LoaderCircle className="animate-spin" />
-            ) : (
-              <RefreshCw />
-            )}
-            <span>{isLoading ? "Generating..." : "Generate Data"}</span>
-          </Button>
-          <Button variant="outline" onClick={onDownload} disabled={isLoading}>
-            <Download />
-            <span>Download JSON</span>
-          </Button>
-        </div>
-      </SidebarFooter>
-    </>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Low: {lowPercentage.toFixed(0)}%</span>
+                    <span>Mid: {midPercentage.toFixed(0)}%</span>
+                    <span>High: {highPercentage.toFixed(0)}%</span>
+                </div>
+                <div className="space-y-2">
+                    <Label>Pre-Grad Score Influence: {params.preGradScoreInfluence.toFixed(2)}</Label>
+                    <Slider min={0} max={1} step={0.05} value={[params.preGradScoreInfluence]} onValueChange={(v) => setParams(p => ({...p, preGradScoreInfluence: v[0]}))} />
+                </div>
+                <div className="space-y-2">
+                    <Label>Exception Percentage: {params.exceptionPercentage.toFixed(2)}</Label>
+                    <Slider min={0} max={1} step={0.05} value={[params.exceptionPercentage]} onValueChange={(v) => setParams(p => ({...p, exceptionPercentage: v[0]}))} />
+                </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-3">
+            <AccordionTrigger>Credit & Course Load</AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-2">
+                <div className="flex items-center gap-4">
+                    <div className="space-y-2 w-1/2">
+                        <Label htmlFor="stdCredit">Standard Credits</Label>
+                        <Input type="number" name="stdCredit" value={params.stdCredit} onChange={handleInputChange}/>
+                    </div>
+                    <div className="space-y-2 w-1/2">
+                        <Label htmlFor="creditsPerSubject">Credits/Subject</Label>
+                        <Input type="number" name="creditsPerSubject" value={params.creditsPerSubject} onChange={handleInputChange}/>
+                    </div>
+                </div>
+                 <div className="space-y-2">
+                    <Label>Credit Load Impact</Label>
+                    <Slider min={0} max={0.3} step={0.01} value={[params.maxCreditImpact]} onValueChange={(v) => setParams(p => ({...p, maxCreditImpact: v[0]}))} />
+                </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        <Button onClick={() => onGenerate(params)} disabled={isGenerating} className="w-full">
+          {isGenerating ? 'Generating...' : 'Generate Data'}
+        </Button>
+      </CardContent>
+    </Card>
   );
-}
+};
+
+export default ParameterSidebar;

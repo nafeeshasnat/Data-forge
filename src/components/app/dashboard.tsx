@@ -2,7 +2,6 @@
 
 import type { GenerationResult } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AiInsights } from "@/components/app/ai-insights";
 import { DepartmentDistributionChart } from "@/components/app/charts/department-distribution-chart";
@@ -10,9 +9,8 @@ import { PerformanceDistributionChart } from "@/components/app/charts/performanc
 import { CgpaDistributionChart } from "@/components/app/charts/cgpa-distribution-chart";
 import { HscVsCgpaChart } from "@/components/app/charts/hsc-vs-cgpa-chart";
 import { SemesterCountChart } from "@/components/app/charts/semester-count-chart";
-import { SubjectPoolDisplay } from "@/components/app/subject-pool-display";
 import { CreditDistributionChart } from "@/components/app/charts/credit-distribution-chart";
-import { Badge } from "@/components/ui/badge";
+import { DataPreview } from "@/components/app/data-preview";
 
 interface DashboardProps {
   result: GenerationResult;
@@ -71,7 +69,7 @@ export function Dashboard({ result, isLoading }: DashboardProps) {
   const { summary, insights, data } = result;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Total Students" value={summary.totalStudents} description="Number of students in the dataset" />
             <StatCard title="Avg. CGPA" value={summary.avgCgpa} description="Across all departments and years" />
@@ -79,32 +77,34 @@ export function Dashboard({ result, isLoading }: DashboardProps) {
             <AiInsights insights={insights} isLoading={isLoading} />
         </div>
       
-        <Tabs defaultValue="demographics">
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="demographics">Demographics</TabsTrigger>
-                <TabsTrigger value="performance">Academic Performance</TabsTrigger>
-                <TabsTrigger value="subjects">Subjects</TabsTrigger>
-            </TabsList>
-            <TabsContent value="demographics" className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <DepartmentDistributionChart summary={summary} />
-                    <PerformanceDistributionChart summary={summary} />
-                    <SemesterCountChart students={data} />
-                </div>
-            </TabsContent>
-            <TabsContent value="performance" className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                    <CgpaDistributionChart students={data} />
-                    <HscVsCgpaChart students={data} />
-                </div>
-            </TabsContent>
-            <TabsContent value="subjects" className="space-y-4">
-                 <div className="grid gap-4 md:grid-cols-2">
-                    <SubjectPoolDisplay />
-                    <CreditDistributionChart students={data} />
-                </div>
-            </TabsContent>
-        </Tabs>
+        <section>
+            <h2 className="text-2xl font-bold mb-4">Demographics</h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <DepartmentDistributionChart summary={summary} />
+                <PerformanceDistributionChart summary={summary} />
+                <SemesterCountChart students={data} />
+            </div>
+        </section>
+
+        <section>
+            <h2 className="text-2xl font-bold mb-4">Academic Performance</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+                <CgpaDistributionChart students={data} />
+                <HscVsCgpaChart students={data} />
+            </div>
+        </section>
+
+        <section>
+            <h2 className="text-2xl font-bold mb-4">Subjects</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+                <CreditDistributionChart students={data} />
+            </div>
+        </section>
+
+        <section>
+            <h2 className="text-2xl font-bold mb-4">Dataset Preview</h2>
+            <DataPreview data={data} />
+        </section>
     </div>
   );
 }

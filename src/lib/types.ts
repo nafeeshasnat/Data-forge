@@ -5,8 +5,10 @@ export interface GenerationParams {
   stdCredit: number;
   maxCredit: number;
   maxCreditImpact: number;
+  preGradScoreInfluence: number;
+  exceptionPercentage: number;
   highPerformanceChance: number;
-  failChance: number;
+  lowPerformanceChance: number;
 }
 
 export interface Semester {
@@ -27,9 +29,19 @@ export interface Student {
   };
 }
 
+export type PerformanceGroup = 'High' | 'Mid' | 'Low';
+
 export interface StudentWithCgpa extends Student {
   cgpa: number;
+  performanceGroup: PerformanceGroup;
 }
+
+export function classifyPerformance(cgpa: number): PerformanceGroup {
+  if (cgpa >= 3.6) return 'High';
+  if (cgpa >= 2.5) return 'Mid';
+  return 'Low';
+}
+
 
 export type Grade = "A+" | "A" | "A-" | "B+" | "B" | "B-" | "C+" | "C" | "D" | "F";
 

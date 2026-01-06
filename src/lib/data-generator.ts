@@ -1,4 +1,4 @@
-import type { GenerationParams, Student, Semester, Grade } from './types';
+import type { GenerationParams, Student, Semester, Grade, PerformanceGroup } from './types';
 import { DEPARTMENTS, SUBJECTS } from './subjects';
 
 function generateSubjectPool(department: string): string[] {
@@ -11,13 +11,19 @@ function generateSubjectPool(department: string): string[] {
     return [...new Set(subjectPool)];
 }
 
-
 const GRADE_SCALE_tuples: [Grade, number][] = [
   ["A+", 4.00], ["A", 3.75], ["A-", 3.50],
   ["B+", 3.25], ["B", 3.00], ["B-", 2.75],
   ["C+", 2.50], ["C", 2.25],
   ["D", 2.00], ["F", 0.00]
 ];
+
+const GRADE_TO_GPA: Record<Grade, number> = {
+    "A+": 4.00, "A": 3.75, "A-": 3.50,
+    "B+": 3.25, "B": 3.00, "B-": 2.75,
+    "C+": 2.50, "C": 2.25,
+    "D": 2.00, "F": 0.00
+};
 
 // Helper functions
 const uniform = (min: number, max: number) => Math.random() * (max - min) + min;
@@ -35,29 +41,31 @@ function shuffle<T>(array: T[]): T[] {
 
 const choice = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
-function triangular(low: number, high: number, mode: number): number {
-  const u = Math.random();
-  const f = (mode - low) / (high - low);
-  if (u < f) {
-    return low + Math.sqrt(u * (high - low) * (mode - low));
-  }
-  return high - Math.sqrt((1 - u) * (high - low) * (high - mode));
+// Adjusted for a more bell-curved distribution
+const PERFORMANCE_BOUNDARIES: Record<PerformanceGroup, { ssc: [number, number], hsc: [number, number], uni: [number, number] }> = {
+    High: { ssc: [3.5, 5.0], hsc: [3.5, 5.0], uni: [3.2, 4.0] },
+    Mid:  { ssc: [2.5, 4.5], hsc: [2.5, 4.5], uni: [2.5, 3.5] },
+    Low:  { ssc: [2.0, 4.0], hsc: [2.0, 3.8], uni: [1.8, 2.8] },
+};
+
+function selectPerformanceGroup(params: GenerationParams): PerformanceGroup {
+    const { highPerformanceChance, lowPerformanceChance } = params;
+    const midPerformanceChance = 1 - highPerformanceChance - lowPerformanceChance;
+    const rand = Math.random();
+    if (rand < highPerformanceChance) return 'High';
+    if (rand < highPerformanceChance + midPerformanceChance) return 'Mid';
+    return 'Low';
 }
 
-function pickPerformanceGroup(params: GenerationParams): 'high' | 'mid' | 'fail' {
-  const r = Math.random();
-  const { highPerformanceChance, failChance } = params;
-  if (r < highPerformanceChance) return "high";
-  if (r < highPerformanceChance + failChance) return "fail";
-  return "mid";
+function getExceptionalPerformanceGroup(originalGroup: PerformanceGroup): PerformanceGroup {
+    if (originalGroup === 'High') return 'Low';
+    if (originalGroup === 'Low') return 'High';
+    return Math.random() < 0.5 ? 'High' : 'Low';
 }
 
-function generateGpa(group: 'high' | 'mid' | 'fail', min: number, max: number, mid_min: number, mid_max: number): number {
-  let gpa: number;
-  if (group === "high") gpa = uniform(max - 0.5, max);
-  else if (group === "fail") gpa = uniform(min, min + 1);
-  else gpa = uniform(mid_min, mid_max);
-  return parseFloat(gpa.toFixed(2));
+function generateGpaInBounds(group: PerformanceGroup, type: 'ssc' | 'hsc' | 'uni'): number {
+    const [min, max] = PERFORMANCE_BOUNDARIES[group][type];
+    return uniform(min, max);
 }
 
 const creditLoad = (params: GenerationParams) => randint(params.minCredit, params.maxCredit);
@@ -66,12 +74,6 @@ function creditImpact(credits: number, params: GenerationParams): number {
   const { stdCredit, maxCredit, minCredit, maxCreditImpact } = params;
   const deviation = (credits - stdCredit) / (maxCredit - minCredit);
   return Math.max(-maxCreditImpact, Math.min(maxCreditImpact, -deviation * maxCreditImpact));
-}
-
-function baseGpa(group: 'high' | 'mid' | 'fail'): number {
-  if (group === "high") return uniform(3.6, 4.0);
-  if (group === "fail") return uniform(1.8, 2.4);
-  return triangular(2.8, 3.6, 3.3);
 }
 
 function gpaToGrade(gpa: number): Grade {
@@ -83,10 +85,21 @@ function gpaToGrade(gpa: number): Grade {
 
 export function generateSyntheticData(params: GenerationParams): Student[] {
   const students: Student[] = [];
+  const currentYear = new Date().getFullYear();
+  const maxBirthYear = currentYear - 18;
+  const minBirthYear = maxBirthYear - 7;
 
   for (let sid = 1; sid <= params.numStudents; sid++) {
+    const performanceGroup = selectPerformanceGroup(params);
     const department = choice(DEPARTMENTS);
-    const performance = pickPerformanceGroup(params);
+    const ssc_gpa = generateGpaInBounds(performanceGroup, 'ssc');
+    const hsc_gpa = generateGpaInBounds(performanceGroup, 'hsc');
+    
+    const preGradUniGpa = ((ssc_gpa / 5.0) + (hsc_gpa / 5.0)) / 2 * 4.0;
+
+    // This ensures a baseline of perfect GPAs can exist even when influences are off.
+    const isPerfectScorer = performanceGroup === 'High' && preGradUniGpa > 3.8 && Math.random() < 0.8;
+
     const fullSubjectPool = generateSubjectPool(department);
     const studentSubjectPool = shuffle([...fullSubjectPool]).slice(0, 50);
 
@@ -101,9 +114,26 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
 
       const semesterSubjects = subjectsToAssign.splice(0, subjectCount);
 
-      const impact = creditImpact(actualCredits, params);
-      const semesterGpa = baseGpa(performance) * (1 + impact);
-      const clampedSemesterGpa = Math.max(0.0, Math.min(4.0, semesterGpa));
+      let semesterGpa: number;
+      
+      if (isPerfectScorer) {
+        semesterGpa = 4.0;
+      } else {
+          let semesterPerformanceGroup = performanceGroup;
+          if (performanceGroup !== 'High' && Math.random() < params.exceptionPercentage) {
+            semesterPerformanceGroup = getExceptionalPerformanceGroup(performanceGroup);
+          }
+          
+          const baseSemesterGpa = generateGpaInBounds(semesterPerformanceGroup, 'uni');
+          let influencedGpa = baseSemesterGpa * (1 - params.preGradScoreInfluence) + preGradUniGpa * params.preGradScoreInfluence;
+
+          if (performanceGroup === 'High') {
+            const perfectScorePush = (preGradUniGpa / 4.0) * params.preGradScoreInfluence;
+            influencedGpa = influencedGpa * (1 - perfectScorePush) + 4.0 * perfectScorePush;
+          }
+
+          semesterGpa = influencedGpa;
+      }
 
       const semesterData: Semester = {
         creditHours: actualCredits,
@@ -111,20 +141,32 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
       };
 
       for (const subject of semesterSubjects) {
-        const noisyGpa = Math.max(0.0, Math.min(4.0, clampedSemesterGpa + uniform(-0.3, 0.3)));
-        semesterData[subject] = gpaToGrade(noisyGpa);
+        let finalGpaForSubject: number;
+        if (isPerfectScorer) {
+            finalGpaForSubject = 4.0;
+        } else {
+            let noisyGpa = semesterGpa + uniform(-0.1, 0.1); 
+            if (semesterId === 1 && Math.random() < 0.05) { 
+                noisyGpa = 0.0;
+            }
+            finalGpaForSubject = Math.max(0.0, Math.min(4.0, noisyGpa));
+        }
+        
+        const grade = gpaToGrade(finalGpaForSubject);
+        semesterData[subject] = grade;
       }
-
+      
       semesters[String(semesterId)] = semesterData;
+
       semesterId++;
     }
 
     students.push({
       student_id: 700100000 + sid,
-      ssc_gpa: generateGpa(performance, 2.0, 5.0, 3.0, 4.5),
-      hsc_gpa: generateGpa(performance, 2.0, 5.0, 3.0, 4.5),
+      ssc_gpa: ssc_gpa,
+      hsc_gpa: hsc_gpa,
       gender: choice(['male', 'female']),
-      birth_year: randint(1998, 2005),
+      birth_year: randint(minBirthYear, maxBirthYear),
       department: department,
       semesters: semesters
     });

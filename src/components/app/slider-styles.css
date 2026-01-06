@@ -1,0 +1,14 @@
+
+.rc-slider-track {
+  background-color: #fde047; /* Mid color */
+}
+
+.rc-slider-rail {
+  background-color: #84cc16; /* High color */
+}
+
+/* We can't directly color the first part of the rail differently with just CSS.
+   The previous inline-style approach on the shadcn/ui slider was better.
+   This is a temporary compromise to get a working slider.
+   The low-performance tier is implicitly represented by the absence of the mid/high colors.
+*/

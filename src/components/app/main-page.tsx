@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { generateDataAction } from "@/app/actions";
 import type { GenerationParams, GenerationResult } from "@/lib/types";
@@ -15,24 +16,13 @@ import { Logo } from "@/components/app/logo";
 import { Download, BotMessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const defaultParams: GenerationParams = {
-  numStudents: 100,
-  creditsPerSubject: 3,
-  minCredit: 9,
-  stdCredit: 15,
-  maxCredit: 24,
-  maxCreditImpact: 0.07,
-  highPerformanceChance: 0.15,
-  failChance: 0.05,
-};
 
 export function MainPage() {
-  const [params, setParams] = React.useState<GenerationParams>(defaultParams);
   const [result, setResult] = React.useState<GenerationResult | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
 
-  const handleGenerate = React.useCallback(async () => {
+  const handleGenerate = React.useCallback(async (params: GenerationParams) => {
     console.log('Generating data with params:', params);
     setIsLoading(true);
     try {
@@ -52,14 +42,8 @@ export function MainPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [params, toast]);
+  }, [toast]);
   
-  React.useEffect(() => {
-    handleGenerate();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-
   const handleDownload = () => {
     if (!result || result.data.length === 0) {
       toast({
@@ -87,44 +71,46 @@ export function MainPage() {
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon" className="border-r-0">
-        <ParameterSidebar
-          params={params}
-          setParams={setParams}
-          onGenerate={handleGenerate}
-          onDownload={handleDownload}
-          isLoading={isLoading}
-        />
-      </Sidebar>
-      <SidebarInset className="min-h-screen">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-          <SidebarTrigger className="md:hidden" />
-          <Logo />
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
-          {result ? (
-            <Dashboard result={result} isLoading={isLoading} />
-          ) : (
-            <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
-                <Card className="w-full max-w-md text-center">
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-center gap-2 text-2xl">
-                           <BotMessageSquare className="h-8 w-8 text-primary"/> Welcome to DataForge AI
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground mb-4">
-                            Adjust the parameters in the sidebar and click "Generate Data" to create your first synthetic dataset.
-                        </p>
-                        <Button onClick={handleGenerate} disabled={isLoading}>
-                            {isLoading ? "Generating..." : "Generate Initial Data"}
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-          )}
-        </main>
-      </SidebarInset>
+        <Sidebar className="border-r-0 md:w-96 md:border-r">
+            <ParameterSidebar
+                onGenerate={handleGenerate}
+                isGenerating={isLoading}
+            />
+        </Sidebar>
+        <SidebarInset className="min-h-screen md:ml-96">
+            <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
+                <div className="flex items-center gap-4">
+                    <SidebarTrigger className="md:hidden" />
+                    <Logo />
+                </div>
+                <Button variant="outline" size="icon" onClick={handleDownload} disabled={!result || isLoading}>
+                    <Download className="h-4 w-4"/>
+                </Button>
+            </header>
+            <main className="flex flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
+            {result ? (
+                <Dashboard result={result} isLoading={isLoading} />
+            ) : (
+                <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
+                    <Card className="w-full max-w-md text-center">
+                        <CardHeader>
+                            <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+                            <BotMessageSquare className="h-8 w-8 text-primary"/> Welcome to DataForge AI
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground mb-4">
+                                Adjust the parameters in the sidebar and click "Generate Data" to create your first synthetic dataset.
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                            Once data is generated, you can download it using the button in the header.
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+            </main>
+        </SidebarInset>
     </SidebarProvider>
   );
 }
