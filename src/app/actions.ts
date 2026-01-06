@@ -1,5 +1,3 @@
-"use server";
-
 import { generateSyntheticData } from "@/lib/data-generator";
 import type { GenerationParams, Student, StudentWithCgpa, DataSummary, GenerationResult, Grade } from "@/lib/types";
 import { GRADE_SCALE } from "@/lib/types";

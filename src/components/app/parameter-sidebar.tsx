@@ -1,6 +1,4 @@
-"use client";
 
-import Link from "next/link";
 import type { GenerationParams } from "@/lib/types";
 import {
   SidebarHeader,
@@ -62,10 +60,10 @@ export function ParameterSidebar({
          <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/upload">
+                <a href="/upload">
                   <Upload />
                   <span>Upload Dataset</span>
-                </Link>
+                </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

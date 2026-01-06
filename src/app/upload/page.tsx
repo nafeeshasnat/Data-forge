@@ -1,18 +1,14 @@
-'use client';
-
 import * as React from 'react';
 import { processUploadedData } from '@/app/actions';
 import type { GenerationResult, Student } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { ParameterSidebar } from '@/components/app/parameter-sidebar';
 import { Dashboard } from '@/components/app/dashboard';
 import { Logo } from '@/components/app/logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { UploadCloud, FileJson } from 'lucide-react';
-import Link from 'next/link';
 
 export default function UploadPage() {
   const [result, setResult] = React.useState<GenerationResult | null>(null);
@@ -76,7 +72,7 @@ export default function UploadPage() {
             </div>
             <div className="p-4">
                 <Button asChild className='w-full'>
-                    <Link href="/">Back to Generator</Link>
+                    <a href="/">Back to Generator</a>
                 </Button>
             </div>
         </div>

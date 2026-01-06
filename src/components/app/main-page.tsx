@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { generateDataAction } from "@/app/actions";
 import type { GenerationParams, GenerationResult } from "@/lib/types";
@@ -35,6 +33,7 @@ export function MainPage() {
   const { toast } = useToast();
 
   const handleGenerate = React.useCallback(async () => {
+    console.log('Generating data with params:', params);
     setIsLoading(true);
     try {
       const generationResult = await generateDataAction(params);
