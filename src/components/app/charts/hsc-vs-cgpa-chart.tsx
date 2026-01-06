@@ -1,25 +1,15 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Scatter, ScatterChart, XAxis, YAxis, Tooltip, CartesianGrid, Label } from "recharts";
-import type { StudentWithCgpa } from "@/lib/types";
+import * as React from 'react';
+import { Scatter, ScatterChart, XAxis, YAxis, Tooltip, CartesianGrid, Label, ResponsiveContainer } from 'recharts';
+import type { StudentWithCgpa } from '@/lib/types';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import {
-  ChartContainer,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-
-function getPerformanceGroup(cgpa: number): 'high' | 'mid' | 'fail' {
-    if (cgpa >= 3.5) return 'high';
-    if (cgpa < 2.0) return 'fail';
-    return 'mid';
-}
+} from '@/components/ui/card';
 
 export function HscVsCgpaChart({ students }: { students: StudentWithCgpa[] }) {
   const chartData = React.useMemo(() => {
@@ -28,19 +18,8 @@ export function HscVsCgpaChart({ students }: { students: StudentWithCgpa[] }) {
       ssc_gpa: s.ssc_gpa,
       hsc_gpa: s.hsc_gpa,
       cgpa: s.cgpa,
-      performance: getPerformanceGroup(s.cgpa),
     }));
   }, [students]);
-  
-  const chartConfig = {
-    cgpa: {
-      label: "CGPA",
-    },
-    preGradGpa: {
-      label: "Pre-Grad GPA",
-      color: "hsl(var(--chart-1))",
-    },
-  };
 
   return (
     <Card>
@@ -51,20 +30,20 @@ export function HscVsCgpaChart({ students }: { students: StudentWithCgpa[] }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="max-h-[250px] w-full">
+        <ResponsiveContainer width="100%" height={300}>
           <ScatterChart
             margin={{
               top: 20,
-              right: 20,
-              bottom: 20,
+              right: 30,
               left: 20,
+              bottom: 20,
             }}
           >
-            <CartesianGrid />
-            <XAxis type="number" dataKey="preGradGpa" name="Pre-Grad GPA" unit="" domain={[2, 5]}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" dataKey="preGradGpa" name="Pre-Grad GPA" domain={['dataMin - 0.1', 'dataMax + 0.1']} tickFormatter={(tick) => tick.toFixed(2)}>
                 <Label value="Pre-Grad GPA" offset={-15} position="insideBottom" />
             </XAxis>
-            <YAxis type="number" dataKey="cgpa" name="CGPA" unit="" domain={[0, 4]}>
+            <YAxis type="number" dataKey="cgpa" name="CGPA" domain={[0, 4]} tickFormatter={(tick) => tick.toFixed(2)}>
                 <Label value="CGPA" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
             </YAxis>
             <Tooltip 
@@ -83,9 +62,9 @@ export function HscVsCgpaChart({ students }: { students: StudentWithCgpa[] }) {
                     return null;
                 }}
             />
-            <Scatter name="Students" data={chartData} fill="var(--color-preGradGpa)" />
+            <Scatter name="Students" data={chartData} fill="#8884d8" />
           </ScatterChart>
-        </ChartContainer>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );

@@ -4,12 +4,7 @@ import type { GenerationResult } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AiInsights } from "@/components/app/ai-insights";
-import { DepartmentDistributionChart } from "@/components/app/charts/department-distribution-chart";
-import { PerformanceDistributionChart } from "@/components/app/charts/performance-distribution-chart";
-import { CgpaDistributionChart } from "@/components/app/charts/cgpa-distribution-chart";
-import { HscVsCgpaChart } from "@/components/app/charts/hsc-vs-cgpa-chart";
-import { SemesterCountChart } from "@/components/app/charts/semester-count-chart";
-import { CreditDistributionChart } from "@/components/app/charts/credit-distribution-chart";
+import { AcademicPerformance } from "@/components/app/academic-performance";
 import { DataPreview } from "@/components/app/data-preview";
 
 interface DashboardProps {
@@ -42,20 +37,12 @@ const LoadingSkeleton = () => (
                 </CardContent>
             </Card>
         ))}
-        <Card className="col-span-full lg:col-span-2">
+        <Card className="col-span-full">
             <CardHeader>
                 <Skeleton className="h-6 w-1/4" />
             </CardHeader>
             <CardContent>
-                <Skeleton className="h-[250px] w-full" />
-            </CardContent>
-        </Card>
-        <Card className="col-span-full lg:col-span-2">
-            <CardHeader>
-                <Skeleton className="h-6 w-1/4" />
-            </CardHeader>
-            <CardContent>
-                <Skeleton className="h-[250px] w-full" />
+                <Skeleton className="h-[400px] w-full" />
             </CardContent>
         </Card>
     </div>
@@ -78,32 +65,13 @@ export function Dashboard({ result, isLoading }: DashboardProps) {
         </div>
       
         <section>
-            <h2 className="text-2xl font-bold mb-4">Demographics</h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <DepartmentDistributionChart summary={summary} />
-                <PerformanceDistributionChart summary={summary} />
-                <SemesterCountChart students={data} />
-            </div>
-        </section>
-
-        <section>
             <h2 className="text-2xl font-bold mb-4">Academic Performance</h2>
-            <div className="grid gap-4 md:grid-cols-2">
-                <CgpaDistributionChart students={data} />
-                <HscVsCgpaChart students={data} />
-            </div>
-        </section>
-
-        <section>
-            <h2 className="text-2xl font-bold mb-4">Subjects</h2>
-            <div className="grid gap-4 md:grid-cols-2">
-                <CreditDistributionChart students={data} />
-            </div>
+            <AcademicPerformance students={data} summary={summary} />
         </section>
 
         <section>
             <h2 className="text-2xl font-bold mb-4">Dataset Preview</h2>
-            <DataPreview data={data} />
+            <DataPreview students={data} />
         </section>
     </div>
   );
