@@ -1,25 +1,24 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import type { StudentWithCgpa, Grade, GenerationParams } from '@/lib/types';
 import { GRADE_SCALE } from '@/lib/types';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface CreditLoadVsGradeChartProps {
+interface CreditLoadVsGradeTableProps {
   students: StudentWithCgpa[];
   params: GenerationParams;
 }
 
-const chartConfig = {
-  avgGpa: {
-    label: "Average GPA",
-    color: "hsl(var(--chart-1))",
-  },
-} satisfies ChartConfig;
-
-export function CreditLoadVsGradeChart({ students, params }: CreditLoadVsGradeChartProps) {
+export function CreditLoadVsGradeTable({ students, params }: CreditLoadVsGradeTableProps) {
   const data = useMemo(() => {
     if (!students.length || !params) return [];
 
@@ -68,32 +67,28 @@ export function CreditLoadVsGradeChart({ students, params }: CreditLoadVsGradeCh
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Credit Load vs. Average Semester Grade</CardTitle>
+        <CardTitle>Credit Load vs. Grade (Debug)</CardTitle>
         <CardDescription>
-          Shows the impact of credit load deviation on the average semester grade.
+          Debug table for credit load vs. average semester grade data.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <BarChart accessibilityLayer data={data}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="creditLoad"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              name="Credit Load"
-            />
-            <YAxis name="Average Grade" domain={[0, 4]}/>
-            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-            <Legend content={() => null} />
-            <Bar
-              dataKey="avgGpa"
-              fill="var(--color-avgGpa)"
-              radius={4}
-            />
-          </BarChart>
-        </ChartContainer>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Credit Load</TableHead>
+              <TableHead>Average Impacted GPA</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map(({ creditLoad, avgGpa }) => (
+              <TableRow key={creditLoad}>
+                <TableCell>{creditLoad}</TableCell>
+                <TableCell>{avgGpa.toFixed(4)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );

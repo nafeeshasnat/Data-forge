@@ -1,6 +1,6 @@
 "use client";
 
-import type { GenerationResult } from "@/lib/types";
+import type { GenerationResult, GenerationParams } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AiInsights } from "@/components/app/ai-insights";
@@ -10,6 +10,7 @@ import { DataPreview } from "@/components/app/data-preview";
 interface DashboardProps {
   result: GenerationResult;
   isLoading: boolean;
+  params: GenerationParams;
 }
 
 const StatCard = ({ title, value, description }: { title: string; value: string | number; description?: string }) => (
@@ -49,7 +50,7 @@ const LoadingSkeleton = () => (
 );
 
 
-export function Dashboard({ result, isLoading }: DashboardProps) {
+export function Dashboard({ result, isLoading, params }: DashboardProps) {
   if (isLoading) return <LoadingSkeleton />;
   if (!result) return null;
 
@@ -66,7 +67,7 @@ export function Dashboard({ result, isLoading }: DashboardProps) {
       
         <section>
             <h2 className="text-2xl font-bold mb-4">Academic Performance</h2>
-            <AcademicPerformance students={data} summary={summary} />
+            <AcademicPerformance students={data} summary={summary} params={params} />
         </section>
 
         <section>

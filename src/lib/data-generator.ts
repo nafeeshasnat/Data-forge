@@ -4,7 +4,7 @@ import { DEPARTMENTS, SUBJECTS } from './subjects';
 function generateSubjectPool(department: string): string[] {
     const baseSubjects = SUBJECTS[department];
     const subjectPool: string[] = [];
-    const totalSubjects = 50; 
+    const totalSubjects = 50;
     for (let i = 0; i < totalSubjects; i++) {
         subjectPool.push(`${baseSubjects[i % baseSubjects.length]}`);
     }
@@ -17,13 +17,6 @@ const GRADE_SCALE_tuples: [Grade, number][] = [
   ["C+", 2.50], ["C", 2.25],
   ["D", 2.00], ["F", 0.00]
 ];
-
-const GRADE_TO_GPA: Record<Grade, number> = {
-    "A+": 4.00, "A": 3.75, "A-": 3.50,
-    "B+": 3.25, "B": 3.00, "B-": 2.75,
-    "C+": 2.50, "C": 2.25,
-    "D": 2.00, "F": 0.00
-};
 
 // Helper functions
 const uniform = (min: number, max: number) => Math.random() * (max - min) + min;
@@ -41,7 +34,6 @@ function shuffle<T>(array: T[]): T[] {
 
 const choice = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
-// Adjusted for a more bell-curved distribution
 const PERFORMANCE_BOUNDARIES: Record<PerformanceGroup, { ssc: [number, number], hsc: [number, number], uni: [number, number] }> = {
     High: { ssc: [3.5, 5.0], hsc: [3.5, 5.0], uni: [3.2, 4.0] },
     Mid:  { ssc: [2.5, 4.5], hsc: [2.5, 4.5], uni: [2.5, 3.5] },
@@ -68,19 +60,17 @@ function generateGpaInBounds(group: PerformanceGroup, type: 'ssc' | 'hsc' | 'uni
     return uniform(min, max);
 }
 
-const creditLoad = (params: GenerationParams) => randint(params.minCredit, params.maxCredit);
-
-function creditImpact(credits: number, params: GenerationParams): number {
-  const { stdCredit, maxCredit, minCredit, maxCreditImpact } = params;
-  const deviation = (credits - stdCredit) / (maxCredit - minCredit);
-  return Math.max(-maxCreditImpact, Math.min(maxCreditImpact, -deviation * maxCreditImpact));
-}
-
 function gpaToGrade(gpa: number): Grade {
   for (const [grade, value] of GRADE_SCALE_tuples) {
     if (gpa >= value) return grade;
   }
   return "F";
+}
+
+function creditImpact(credits: number, params: GenerationParams): number {
+  const { stdCredit, maxCredit, minCredit, maxCreditImpact } = params;
+  const deviation = (credits - stdCredit) / 20;
+  return -deviation * maxCreditImpact;
 }
 
 export function generateSyntheticData(params: GenerationParams): Student[] {
@@ -97,7 +87,6 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     
     const preGradUniGpa = ((ssc_gpa / 5.0) + (hsc_gpa / 5.0)) / 2 * 4.0;
 
-    // This ensures a baseline of perfect GPAs can exist even when influences are off.
     const isPerfectScorer = performanceGroup === 'High' && preGradUniGpa > 3.8 && Math.random() < 0.8;
 
     const fullSubjectPool = generateSubjectPool(department);
@@ -108,8 +97,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     let subjectsToAssign = [...studentSubjectPool];
 
     while (subjectsToAssign.length > 0) {
-      const credits = creditLoad(params);
-      const subjectCount = Math.min(Math.ceil(credits / params.creditsPerSubject), subjectsToAssign.length);
+      const subjectCount = Math.min(Math.ceil(randint(params.minCredit, params.maxCredit) / params.creditsPerSubject), subjectsToAssign.length);
       const actualCredits = subjectCount * params.creditsPerSubject;
 
       const semesterSubjects = subjectsToAssign.splice(0, subjectCount);
@@ -131,21 +119,25 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
             const perfectScorePush = (preGradUniGpa / 4.0) * params.preGradScoreInfluence;
             influencedGpa = influencedGpa * (1 - perfectScorePush) + 4.0 * perfectScorePush;
           }
-
-          semesterGpa = influencedGpa;
+          semesterGpa = influencedGpa + creditImpact(actualCredits, params);
       }
 
+      const attendancePercentage = randint(65, 100);
       const semesterData: Semester = {
         creditHours: actualCredits,
-        attendancePercentage: randint(65, 100)
+        attendancePercentage: attendancePercentage
       };
+
+      const attendanceImpact = (attendancePercentage - 82.5) / 17.5 * params.attendanceImpact;
 
       for (const subject of semesterSubjects) {
         let finalGpaForSubject: number;
         if (isPerfectScorer) {
             finalGpaForSubject = 4.0;
         } else {
-            let noisyGpa = semesterGpa + uniform(-0.1, 0.1); 
+            let noisyGpa = semesterGpa + uniform(-0.1, 0.1);
+            noisyGpa += attendanceImpact;
+
             if (semesterId === 1 && Math.random() < 0.05) { 
                 noisyGpa = 0.0;
             }

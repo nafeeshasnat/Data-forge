@@ -9,6 +9,7 @@ export interface GenerationParams {
   exceptionPercentage: number;
   highPerformanceChance: number;
   lowPerformanceChance: number;
+  attendanceImpact: number;
 }
 
 export interface Semester {

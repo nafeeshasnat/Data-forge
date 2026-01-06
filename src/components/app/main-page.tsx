@@ -19,11 +19,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function MainPage() {
   const [result, setResult] = React.useState<GenerationResult | null>(null);
+  const [params, setParams] = React.useState<GenerationParams | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
 
   const handleGenerate = React.useCallback(async (params: GenerationParams) => {
     console.log('Generating data with params:', params);
+    setParams(params);
     setIsLoading(true);
     try {
       const generationResult = await generateDataAction(params);
@@ -88,8 +90,8 @@ export function MainPage() {
                 </Button>
             </header>
             <main className="flex flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
-            {result ? (
-                <Dashboard result={result} isLoading={isLoading} />
+            {result && params ? (
+                <Dashboard result={result} isLoading={isLoading} params={params} />
             ) : (
                 <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
                     <Card className="w-full max-w-md text-center">

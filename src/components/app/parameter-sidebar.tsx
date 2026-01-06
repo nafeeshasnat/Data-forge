@@ -21,11 +21,12 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
     minCredit: 12,
     stdCredit: 15,
     maxCredit: 21,
-    maxCreditImpact: 0.1,
+    maxCreditImpact: 0.05,
     highPerformanceChance: 0.2,
     lowPerformanceChance: 0.1,
     preGradScoreInfluence: 0.2,
     exceptionPercentage: 0.1,
+    attendanceImpact: 0.1,
   });
 
   const [distributionPoints, setDistributionPoints] = useState([params.lowPerformanceChance * 100, (1 - params.highPerformanceChance) * 100]);
@@ -83,6 +84,10 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
                     <Label>Exception Percentage: {params.exceptionPercentage.toFixed(2)}</Label>
                     <Slider min={0} max={1} step={0.05} value={[params.exceptionPercentage]} onValueChange={(v) => setParams(p => ({...p, exceptionPercentage: v[0]}))} />
                 </div>
+                <div className="space-y-2">
+                  <Label>Attendance Impact: {params.attendanceImpact.toFixed(2)}</Label>
+                  <Slider min={0} max={0.5} step={0.05} value={[params.attendanceImpact]} onValueChange={(v) => setParams(p => ({...p, attendanceImpact: v[0]}))} />
+                </div>
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-3">
@@ -100,7 +105,7 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
                 </div>
                  <div className="space-y-2">
                     <Label>Credit Load Impact</Label>
-                    <Slider min={0} max={0.3} step={0.01} value={[params.maxCreditImpact]} onValueChange={(v) => setParams(p => ({...p, maxCreditImpact: v[0]}))} />
+                    <Slider min={0} max={0.2} step={0.01} value={[params.maxCreditImpact]} onValueChange={(v) => setParams(p => ({...p, maxCreditImpact: v[0]}))} />
                 </div>
             </AccordionContent>
           </AccordionItem>

@@ -1,6 +1,6 @@
 "use client"
 
-import type { StudentWithCgpa, GenerationSummary } from "@/lib/types"
+import type { StudentWithCgpa, GenerationSummary, GenerationParams } from "@/lib/types"
 import { CgpaDistributionChart } from "./charts/cgpa-distribution-chart"
 import { DepartmentDistributionChart } from "./charts/department-distribution-chart"
 import { HscVsCgpaChart } from "./charts/hsc-vs-cgpa-chart"
@@ -13,16 +13,17 @@ import { CreditDistributionChart } from "./charts/credit-distribution-chart"
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[]
   summary: GenerationSummary
+  params: GenerationParams
 }
 
-export function AcademicPerformance({ students, summary }: AcademicPerformanceProps) {
+export function AcademicPerformance({ students, summary, params }: AcademicPerformanceProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
       <CgpaDistributionChart students={students} />
       <DepartmentDistributionChart summary={summary} />
       <HscVsCgpaChart students={students} />
       <PerformanceDistributionChart summary={summary} />
-      <CreditLoadVsGradeChart students={students} />
+      <CreditLoadVsGradeChart students={students} params={params} />
       <AttendanceVsGradeChart students={students} />
       <SemesterCountChart students={students} />
       <CreditDistributionChart students={students} />

@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     const params: GenerationParams = await request.json();
     const syntheticData = generateSyntheticData(params);
-    const { data, summary } = analyzeData(syntheticData);
+    const { data, summary } = analyzeData(syntheticData, params);
 
     // For now, insights are not generated, so we return an empty string.
     const insights = ""; 

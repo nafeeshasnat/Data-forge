@@ -1,18 +1,27 @@
-import type { Student, StudentWithCgpa, DataSummary, PerformanceGroup } from "./types";
+import type { Student, StudentWithCgpa, DataSummary, PerformanceGroup, GenerationParams } from "./types";
 import { GRADE_SCALE } from "./types";
 
-function calculateCgpa(student: Student): StudentWithCgpa {
+function calculateCgpa(student: Student, params: GenerationParams): StudentWithCgpa {
   let totalGradePoints = 0;
   let totalCredits = 0;
 
   for (const semesterId in student.semesters) {
     const semester = student.semesters[semesterId];
+    
+    let semesterSubjectsGradePoints = 0;
+    let semesterSubjectCredits = 0;
+
     for (const subject in semester) {
       if (subject !== 'creditHours' && subject !== 'attendancePercentage') {
         const grade = semester[subject] as keyof typeof GRADE_SCALE;
-        totalGradePoints += GRADE_SCALE[grade] * 3; // Assuming 3 credits per subject
-        totalCredits += 3;
+        semesterSubjectsGradePoints += GRADE_SCALE[grade] * params.creditsPerSubject;
+        semesterSubjectCredits += params.creditsPerSubject;
       }
+    }
+
+    if (semesterSubjectCredits > 0) {
+        totalGradePoints += semesterSubjectsGradePoints;
+        totalCredits += semesterSubjectCredits;
     }
   }
 
@@ -26,31 +35,36 @@ function classifyPerformance(cgpa: number): PerformanceGroup {
   return 'Low';
 }
 
-export function analyzeData(students: Student[]): { data: StudentWithCgpa[], summary: DataSummary } {
-  const studentsWithCgpa = students.map(calculateCgpa);
-
+function calculateSummary(students: StudentWithCgpa[]): DataSummary {
   const totalStudents = students.length;
-  const avgHscGpa = parseFloat((students.reduce((sum, s) => sum + s.hsc_gpa, 0) / totalStudents).toFixed(2));
-  const avgCgpa = parseFloat((studentsWithCgpa.reduce((sum, s) => sum + s.cgpa, 0) / totalStudents).toFixed(2));
+  if (totalStudents === 0) {
+    return { totalStudents: 0, avgHscGpa: 0, avgCgpa: 0, departmentDistribution: {}, performanceDistribution: {} };
+  }
+
+  const totalHscGpa = students.reduce((sum, s) => sum + s.hsc_gpa, 0);
+  const totalCgpa = students.reduce((sum, s) => sum + s.cgpa, 0);
 
   const departmentDistribution = students.reduce((acc, s) => {
     acc[s.department] = (acc[s.department] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as { [key: string]: number });
 
-  const performanceDistribution = studentsWithCgpa.reduce((acc, s) => {
+  const performanceDistribution = students.reduce((acc, s) => {
     acc[s.performanceGroup] = (acc[s.performanceGroup] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as { [key: string]: number });
 
-
-  const summary: DataSummary = {
+  return {
     totalStudents,
-    avgHscGpa,
-    avgCgpa,
+    avgHscGpa: parseFloat((totalHscGpa / totalStudents).toFixed(2)),
+    avgCgpa: parseFloat((totalCgpa / totalStudents).toFixed(2)),
     departmentDistribution,
     performanceDistribution,
   };
-
-  return { data: studentsWithCgpa, summary };
 }
+
+export const analyzeData = (students: Student[], params: GenerationParams) => {
+  const studentsWithCgpa = students.map(student => calculateCgpa(student, params));
+  const summary = calculateSummary(studentsWithCgpa);
+  return { data: studentsWithCgpa, summary };
+};
