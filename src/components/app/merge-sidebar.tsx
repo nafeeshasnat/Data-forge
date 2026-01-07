@@ -1,11 +1,11 @@
 'use client';
 
+import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/app/logo';
@@ -14,10 +14,18 @@ interface MergeSidebarProps {
   onMerge: () => void;
   onDownload: () => void;
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onTrim: (minCgpa: number, maxCgpa: number, percentage: number) => void;
   mergedStudentsCount: number;
 }
 
-export function MergeSidebar({ onMerge, onDownload, onFileChange, mergedStudentsCount }: MergeSidebarProps) {
+export function MergeSidebar({ onMerge, onDownload, onFileChange, onTrim, mergedStudentsCount }: MergeSidebarProps) {
+  const [cgpaRange, setCgpaRange] = React.useState<[number, number]>([2.0, 3.0]);
+  const [percentage, setPercentage] = React.useState<number>(10);
+
+  const handleTrimClick = () => {
+    onTrim(cgpaRange[0], cgpaRange[1], percentage);
+  };
+
   return (
     <div className="h-full flex flex-col gap-4 p-4 bg-card">
         <div className="flex items-center justify-between">
@@ -54,29 +62,37 @@ export function MergeSidebar({ onMerge, onDownload, onFileChange, mergedStudents
           <CardTitle>Trim Data</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="cgpa-range">CGPA Range</Label>
-            <Slider id="cgpa-range" defaultValue={[0, 4]} min={0} max={4} step={0.1} />
+           <div>
+            <div className="flex justify-between mb-2">
+                <Label htmlFor="cgpa-range">CGPA Range</Label>
+                <span className="text-sm text-muted-foreground">{cgpaRange[0].toFixed(1)} - {cgpaRange[1].toFixed(1)}</span>
+            </div>
+            <Slider
+              id="cgpa-range"
+              value={cgpaRange}
+              onValueChange={setCgpaRange}
+              min={0}
+              max={4}
+              step={0.1}
+            />
           </div>
           <div>
-            <Label htmlFor="attendance-range">Attendance (%)</Label>
-            <Slider id="attendance-range" defaultValue={[0, 100]} min={0} max={100} step={1} />
+            <div className="flex justify-between mb-2">
+                <Label htmlFor="trim-percentage">Removal Percentage</Label>
+                 <span className="text-sm text-muted-foreground">{percentage}%</span>
+            </div>
+            <Input
+              id="trim-percentage"
+              type="number"
+              value={percentage}
+              onChange={(e) => setPercentage(Math.max(0, Math.min(100, Number(e.target.value))))}
+              min={0}
+              max={100}
+            />
           </div>
-          <div>
-            <Label>Department</Label>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="cse">CSE</SelectItem>
-                <SelectItem value="eee">EEE</SelectItem>
-                <SelectItem value="bba">BBA</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button className="w-full">Apply Trim</Button>
+          <Button onClick={handleTrimClick} disabled={mergedStudentsCount === 0} className="w-full">
+            Apply Trim
+          </Button>
         </CardContent>
       </Card>
     </div>

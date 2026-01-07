@@ -10,6 +10,9 @@ import { GRADE_SCALE } from "@/lib/types";
  */
 const simpleStringHash = (str: string): number => {
   let hash = 0;
+  if (!str || str.length === 0) {
+    return hash;
+  }
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
@@ -28,7 +31,16 @@ export class AnalysisEngine {
   private studentsWithCgpa: StudentWithCgpa[];
 
   constructor(students: Student[], params: GenerationParams) {
-    this.students = students;
+    // Ensure every student has a unique ID for deterministic operations.
+    this.students = students.map((student, index) => {
+        if (!student.id) {
+            // If no ID, generate a deterministic one based on student data + index as a fallback.
+            const studentDataString = JSON.stringify(student) + index;
+            return { ...student, id: `gen_${simpleStringHash(studentDataString)}` };
+        }
+        return student;
+    });
+
     this.params = params;
     // Pre-calculate CGPA for all students on construction, as it's needed for trimming.
     this.studentsWithCgpa = this.students.map(student => this.calculateCgpa(student));
