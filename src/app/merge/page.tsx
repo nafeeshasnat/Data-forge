@@ -4,7 +4,6 @@ import { useState } from 'react';
 import type { Student, GenerationParams, AnalysisSummary, StudentWithCgpa } from '@/lib/types';
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { MergeSidebar } from '@/components/app/merge-sidebar';
-import { AnalysisEngine } from '@/lib/engine/analysis-engine';
 import { useToast } from '@/hooks/use-toast';
 
 export default function MergePage() {
@@ -29,94 +28,39 @@ export default function MergePage() {
       return;
     }
 
-    const parsedData = [];
-
+    const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const content = await file.text();
-      try {
-        const data = JSON.parse(content);
-        parsedData.push(data);
-      } catch (error) {
-        console.error("Error parsing file:", file.name, error);
-        toast({
-            variant: "destructive",
-            title: "File Parse Error",
-            description: `Error parsing ${file.name}. Please ensure it is a valid JSON file.`,
-        });
-        return;
+      formData.append('files', files[i]);
+    }
+
+    try {
+      const response = await fetch('/api/merge', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to merge files');
       }
-    }
 
-    if (files.length === 1) {
-        const data = parsedData[0];
-        if (data.students && data.summary && data.params && data.insights) {
-            setParams(data.params);
-            setSummary(data.summary);
-            setMergedStudents(data.students);
-            setInsights(data.insights);
-            toast({
-              title: "File Loaded",
-              description: `Loaded ${data.students.length} students from ${files[0].name}.`,
-            });
-            return;
-        }
-    }
+      const result = await response.json();
 
-    let allStudents: Student[] = [];
-    let firstFileParams: GenerationParams | null = null;
+      setParams(result.params);
+      setSummary(result.summary);
+      setMergedStudents(result.students);
+      setInsights(result.insights);
 
-    for (let i = 0; i < parsedData.length; i++) {
-        const data = parsedData[i];
-        const students = data.students || (Array.isArray(data) ? data : []);
-        allStudents = [...allStudents, ...students];
-
-        if (i === 0 && data.params) {
-          firstFileParams = data.params;
-        }
-    }
-
-    if (allStudents.length === 0) {
-        toast({
-            variant: "destructive",
-            title: "No Students Found",
-            description: "No student data found in the selected files.",
-        });
-        return;
-    }
-
-    let analysisParams: GenerationParams;
-    if (firstFileParams) {
-      analysisParams = firstFileParams;
-    } else {
-      analysisParams = {
-        numStudents: allStudents.length,
-        highPerformanceChance: 0.2,
-        lowPerformanceChance: 0.2,
-        exceptionPercentage: 0.1,
-        preGradScoreInfluence: 0.5,
-        attendanceImpact: 0.2,
-        stdCredit: 15,
-        maxCredit: 22,
-        minCredit: 12,
-        creditsPerSubject: 3,
-        maxCreditImpact: 0.5
-      };
-    }
-
-    setParams(analysisParams);
-
-    const engine = new AnalysisEngine(allStudents, analysisParams);
-    const { data: studentsWithCgpa, summary, insights: newInsights } = engine.run();
-
-    setMergedStudents(studentsWithCgpa);
-    setSummary(summary);
-    setInsights(newInsights);
-
-    toast({
+      toast({
         title: "Merge Successful",
-        description: `Successfully merged ${files.length} files with a total of ${studentsWithCgpa.length} students.`,
-    });
+        description: `Successfully merged and analyzed ${files.length} files.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Merge Failed",
+        description: (error as Error).message,
+      });
+    }
   };
 
   const handleDownload = () => {
@@ -152,36 +96,10 @@ export default function MergePage() {
   };
 
   const handleTrim = (minCgpa: number, maxCgpa: number, percentage: number) => {
-    if (mergedStudents.length === 0 || !params) {
-      toast({
-        variant: "destructive",
-        title: "No data to trim",
-        description: "Please merge a dataset first.",
-      });
-      return;
-    }
-
-    const engine = new AnalysisEngine(mergedStudents, params);
-    const trimmedStudents = engine.trimData(minCgpa, maxCgpa, percentage);
-
-    if(trimmedStudents.length === mergedStudents.length){
-        toast({
-            title: "No Students Trimmed",
-            description: "No students met the criteria for trimming.",
-        });
-        return;
-    }
-    
-    const newEngine = new AnalysisEngine(trimmedStudents, params);
-    const { data, summary: newSummary, insights: newInsights } = newEngine.run();
-
-    setMergedStudents(data);
-    setSummary(newSummary);
-    setInsights(newInsights);
-
     toast({
-      title: "Data Trimmed",
-      description: `Removed ${mergedStudents.length - data.length} students.`
+      variant: "destructive",
+      title: "Not Implemented",
+      description: "Trimming is not yet supported with backend processing.",
     });
   };
 
