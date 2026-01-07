@@ -4,26 +4,72 @@ import type { Student, StudentWithCgpa, AnalysisSummary, PerformanceGroup, Gener
 import { GRADE_SCALE } from "@/lib/types";
 
 /**
+ * A simple string hashing function for deterministic shuffling.
+ * @param str The string to hash.
+ * @returns A 32-bit integer hash.
+ */
+const simpleStringHash = (str: string): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash;
+};
+
+/**
  * The AnalysisEngine is responsible for all deterministic calculations on a given dataset.
  * It takes student data and parameters, and produces a complete analysis without any randomness.
  */
 export class AnalysisEngine {
   private students: Student[];
   private params: GenerationParams;
+  private studentsWithCgpa: StudentWithCgpa[];
 
   constructor(students: Student[], params: GenerationParams) {
     this.students = students;
     this.params = params;
+    // Pre-calculate CGPA for all students on construction, as it's needed for trimming.
+    this.studentsWithCgpa = this.students.map(student => this.calculateCgpa(student));
   }
 
   /**
    * Runs the complete analysis suite.
    */
   public run(): { data: StudentWithCgpa[], summary: AnalysisSummary } {
-    const studentsWithCgpa = this.students.map(student => this.calculateCgpa(student));
-    const summary = this.calculateSummary(studentsWithCgpa);
-    return { data: studentsWithCgpa, summary };
+    const summary = this.calculateSummary(this.studentsWithCgpa);
+    return { data: this.studentsWithCgpa, summary };
   }
+  
+  /**
+   * Trims a percentage of students from a specified CGPA range in a deterministic but pseudo-random way.
+   * This method is deterministic.
+   * @param minCgpa The minimum CGPA of the range.
+   * @param maxCgpa The maximum CGPA of the range.
+   * @param percentage The percentage of students to remove from the range (0-100).
+   * @returns A new array of students with the specified students removed.
+   */
+  public trimData(minCgpa: number, maxCgpa: number, percentage: number): StudentWithCgpa[] {
+    const studentsInRange = this.studentsWithCgpa.filter(s => s.cgpa >= minCgpa && s.cgpa <= maxCgpa);
+    const studentsOutOfRange = this.studentsWithCgpa.filter(s => s.cgpa < minCgpa || s.cgpa > maxCgpa);
+
+    const numToRemove = Math.floor(studentsInRange.length * (percentage / 100));
+
+    // Deterministically shuffle students in the range by sorting based on a hash of their ID.
+    // This ensures a pseudo-random distribution that is repeatable.
+    studentsInRange.sort((a, b) => simpleStringHash(a.id) - simpleStringHash(b.id));
+
+    const trimmedStudentsInRange = studentsInRange.slice(numToRemove);
+
+    const newStudentList = [...studentsOutOfRange, ...trimmedStudentsInRange];
+    
+    // Sort the final list by student ID for consistent order in the UI.
+    newStudentList.sort((a, b) => a.id.localeCompare(b.id));
+
+    return newStudentList;
+  }
+
 
   /**
    * Calculates the CGPA for a single student based on their semester grades.

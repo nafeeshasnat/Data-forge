@@ -51,6 +51,31 @@ export function MainPage() {
     }
   }, [toast]);
   
+  const handleTrim = React.useCallback((minCgpa: number, maxCgpa: number, percentage: number) => {
+    if (students.length === 0 || !params) {
+      toast({
+        variant: "destructive",
+        title: "No data to trim",
+        description: "Please generate a dataset first.",
+      });
+      return;
+    }
+
+    const engine = new AnalysisEngine(students, params);
+    const trimmedStudents = engine.trimData(minCgpa, maxCgpa, percentage);
+    
+    const newEngine = new AnalysisEngine(trimmedStudents, params);
+    const { data, summary } = newEngine.run();
+
+    setStudents(data);
+    setSummary(summary);
+
+    toast({
+      title: "Data Trimmed",
+      description: `Removed ${students.length - data.length} students.`
+    });
+  }, [students, params, toast]);
+
   const handleDownload = () => {
     if (students.length === 0 || !summary || !params) {
       toast({
@@ -86,7 +111,7 @@ export function MainPage() {
   return (
     <SidebarProvider>
       <Sidebar className="border-r-0 md:w-96 md:border-r">
-        <ParameterSidebar onGenerate={handleGenerate} isGenerating={isLoading} />
+        <ParameterSidebar onGenerate={handleGenerate} isGenerating={isLoading} onTrim={handleTrim} />
       </Sidebar>
       <SidebarInset className="min-h-screen md:ml-96">
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
