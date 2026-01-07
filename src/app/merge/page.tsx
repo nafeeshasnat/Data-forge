@@ -3,10 +3,7 @@
 import { useState } from 'react';
 import type { Student, GenerationParams, AnalysisSummary, StudentWithCgpa } from '@/lib/types';
 import { AcademicPerformance } from '@/components/app/academic-performance';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { MergeSidebar } from '@/components/app/merge-sidebar';
 import { analyzeData } from '@/lib/analysis';
 
 export default function MergePage() {
@@ -90,36 +87,27 @@ export default function MergePage() {
   };
 
   return (
-    <div className="container relative py-4">
+    <div className="flex h-screen bg-background">
+      <aside className="w-80 h-full overflow-y-auto border-r">
+        <MergeSidebar 
+            onMerge={handleMerge} 
+            onDownload={handleDownload} 
+            onFileChange={handleFileChange} 
+            mergedStudentsCount={mergedStudents.length} 
+        />
+      </aside>
+      <main className="flex-1 p-6 overflow-auto">
         <div className="mb-4">
             <h1 className="text-2xl font-bold">Merge and Analyze Datasets</h1>
         </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-            <Card className="lg:col-span-1 h-fit">
-            <CardHeader>
-                <CardTitle>Merge Datasets</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div>
-                <Label htmlFor="file-upload">Upload JSON Files</Label>
-                <Input id="file-upload" type="file" multiple onChange={handleFileChange} accept=".json" />
-                </div>
-                <Button onClick={handleMerge}>Merge Datasets</Button>
-                <Button onClick={handleDownload} disabled={mergedStudents.length === 0}>
-                Download Merged Dataset
-                </Button>
-            </CardContent>
-            </Card>
-            <div className="lg:col-span-3">
-                {mergedStudents.length > 0 && summary && params ? (
-                    <AcademicPerformance students={mergedStudents} summary={summary} params={params} />
-                ) : (
-                    <div className="text-center p-8 border rounded-lg">
-                        <p>Please merge datasets to see the analytics.</p>
-                    </div>
-                )}
+        {mergedStudents.length > 0 && summary && params ? (
+            <AcademicPerformance students={mergedStudents} summary={summary} params={params} />
+        ) : (
+            <div className="flex items-center justify-center h-full text-center p-8 border rounded-lg bg-card">
+                <p className="text-muted-foreground">Please upload and merge datasets to see the analytics.</p>
             </div>
-        </div>
+        )}
+      </main>
     </div>
   );
 }
