@@ -11,14 +11,16 @@ import { SemesterCountChart } from './charts/semester-count-chart';
 import { CreditDistributionChart } from './charts/credit-distribution-chart';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { AnalysisInsights } from './analysis-insights';
 
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[];
   summary: AnalysisSummary;
   params: GenerationParams;
+  insights: string[];
 }
 
-export function AcademicPerformance({ students, summary, params }: AcademicPerformanceProps) {
+export function AcademicPerformance({ students, summary, params, insights }: AcademicPerformanceProps) {
 
   const handleDownloadLog = (title: string, data: any) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -34,6 +36,9 @@ export function AcademicPerformance({ students, summary, params }: AcademicPerfo
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="md:col-span-2">
+            <AnalysisInsights insights={insights} />
+        </div>
       <Card>
         <CardHeader>
           <CardTitle>CGPA Distribution</CardTitle>

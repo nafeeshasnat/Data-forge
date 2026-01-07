@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 export function MainPage() {
   const [students, setStudents] = React.useState<StudentWithCgpa[]>([]);
   const [summary, setSummary] = React.useState<AnalysisSummary | null>(null);
+  const [insights, setInsights] = React.useState<string[]>([]);
   const [params, setParams] = React.useState<GenerationParams | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
@@ -30,10 +31,11 @@ export function MainPage() {
       
       // 2. Analyze the data (deterministic)
       const engine = new AnalysisEngine(generatedStudents, params);
-      const { data, summary } = engine.run();
+      const { data, summary, insights } = engine.run();
 
       setStudents(data);
       setSummary(summary);
+      setInsights(insights);
 
       toast({
         title: "Success",
@@ -65,10 +67,11 @@ export function MainPage() {
     const trimmedStudents = engine.trimData(minCgpa, maxCgpa, percentage);
     
     const newEngine = new AnalysisEngine(trimmedStudents, params);
-    const { data, summary } = newEngine.run();
+    const { data, summary, insights } = newEngine.run();
 
     setStudents(data);
     setSummary(summary);
+    setInsights(insights);
 
     toast({
       title: "Data Trimmed",
@@ -89,6 +92,7 @@ export function MainPage() {
     const dataToDownload = {
       params,
       summary,
+      insights,
       students,
     };
 
@@ -132,7 +136,7 @@ export function MainPage() {
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
           {students.length > 0 && summary && params ? (
-            <AcademicPerformance students={students} summary={summary} params={params} />
+            <AcademicPerformance students={students} summary={summary} params={params} insights={insights} />
           ) : (
             <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
               <Card className="w-full max-w-md text-center">

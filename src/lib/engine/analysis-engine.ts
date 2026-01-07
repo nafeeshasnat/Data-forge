@@ -37,9 +37,10 @@ export class AnalysisEngine {
   /**
    * Runs the complete analysis suite.
    */
-  public run(): { data: StudentWithCgpa[], summary: AnalysisSummary } {
+  public run(): { data: StudentWithCgpa[], summary: AnalysisSummary, insights: string[] } {
     const summary = this.calculateSummary(this.studentsWithCgpa);
-    return { data: this.studentsWithCgpa, summary };
+    const insights = this.generateInsights(summary);
+    return { data: this.studentsWithCgpa, summary, insights };
   }
   
   /**
@@ -70,6 +71,57 @@ export class AnalysisEngine {
     return newStudentList;
   }
 
+  /**
+   * Generates a list of key insights from the analysis summary.
+   * @param summary The analysis summary.
+   * @returns An array of human-readable insights.
+   */
+  private generateInsights(summary: AnalysisSummary): string[] {
+    const insights: string[] = [];
+    const { totalStudents, avgCgpa, avgHscGpa, performanceDistribution, departmentDistribution } = summary;
+
+    if (totalStudents === 0) {
+      return ["No students in the dataset to analyze."];
+    }
+
+    // Insight 1: Dominant Performance Group
+    const performanceGroups = Object.entries(performanceDistribution).sort((a, b) => b[1] - a[1]);
+    if (performanceGroups.length > 0) {
+      const dominantGroup = performanceGroups[0][0];
+      const dominantPercentage = ((performanceGroups[0][1] / totalStudents) * 100).toFixed(0);
+      insights.push(`The majority of students (${dominantPercentage}%) fall into the '${dominantGroup}' performance category.`);
+    }
+
+    // Insight 2: CGPA vs HSC GPA comparison
+    if (avgCgpa < avgHscGpa - 0.5) {
+      insights.push(`The average CGPA (${avgCgpa}) is significantly lower than the average HSC GPA (${avgHscGpa}), suggesting a challenging academic transition.`);
+    } else if (avgCgpa > avgHscGpa + 0.2) {
+      insights.push(`Students, on average, perform better in university (Avg CGPA: ${avgCgpa}) than they did in HSC (Avg GPA: ${avgHscGpa}).`);
+    }
+
+    // Insight 3: Department Distribution
+    const departments = Object.entries(departmentDistribution).sort((a, b) => b[1] - a[1]);
+    if (departments.length > 1) {
+      const largestDept = departments[0][0];
+      insights.push(`The department with the most students is ${largestDept}.`);
+    }
+
+    // Insight 4: High and Low Performers
+    const highPerformers = performanceDistribution['High'] || 0;
+    const lowPerformers = performanceDistribution['Low'] || 0;
+    const highPerformerPercentage = ((highPerformers / totalStudents) * 100).toFixed(0);
+    const lowPerformerPercentage = ((lowPerformers / totalStudents) * 100).toFixed(0);
+
+    if (highPerformers > 0) {
+        insights.push(`${highPerformerPercentage}% of students are high-performers (CGPA >= 3.6).`);
+    }
+     if (lowPerformers > 0) {
+        insights.push(`${lowPerformerPercentage}% of students are low-performers (CGPA < 2.5).`);
+    }
+
+
+    return insights;
+  }
 
   /**
    * Calculates the CGPA for a single student based on their semester grades.
