@@ -111,7 +111,7 @@ export function MainPage() {
   return (
     <SidebarProvider>
       <Sidebar className="border-r-0 md:w-96 md:border-r">
-        <ParameterSidebar onGenerate={handleGenerate} isGenerating={isLoading} onTrim={handleTrim} />
+        <ParameterSidebar onGenerate={handleGenerate} isGenerating={isLoading} onTrim={handleTrim} isDataPresent={students.length > 0} />
       </Sidebar>
       <SidebarInset className="min-h-screen md:ml-96">
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:h-16 sm:px-6">

@@ -9,14 +9,16 @@ import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ThreeValueSlider } from "@/components/ui/three-value-slider";
 import { defaultParams } from '@/lib/config';
+import { TrimDataDialog } from '@/components/app/trim-data-dialog';
 
 interface ParameterSidebarProps {
   onGenerate: (params: GenerationParams) => void;
   isGenerating: boolean;
   onTrim: (minCgpa: number, maxCgpa: number, percentage: number) => void;
+  isDataPresent: boolean;
 }
 
-export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, isGenerating, onTrim }) => {
+export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, isGenerating, onTrim, isDataPresent }) => {
   const [params, setParams] = useState<GenerationParams>({
     numStudents: defaultParams.studentCount,
     creditsPerSubject: 3,
@@ -32,8 +34,6 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
   });
 
   const [distributionPoints, setDistributionPoints] = useState([params.lowPerformanceChance * 100, (1 - params.highPerformanceChance) * 100]);
-  const [trimCgpaRange, setTrimCgpaRange] = useState([2.0, 3.0]);
-  const [trimPercentage, setTrimPercentage] = useState(10);
 
   useEffect(() => {
     const lowChance = distributionPoints[0] / 100;
@@ -113,24 +113,13 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
                 </div>
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-4">
-            <AccordionTrigger>Data Trimming</AccordionTrigger>
-            <AccordionContent className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label>CGPA Range: {trimCgpaRange[0].toFixed(2)} - {trimCgpaRange[1].toFixed(2)}</Label>
-                <Slider min={0} max={4} step={0.1} value={trimCgpaRange} onValueChange={setTrimCgpaRange} />
-              </div>
-              <div className="space-y-2">
-                <Label>Percentage to Remove: {trimPercentage}%</Label>
-                <Slider min={0} max={100} step={1} value={[trimPercentage]} onValueChange={(v) => setTrimPercentage(v[0])} />
-              </div>
-              <Button onClick={() => onTrim(trimCgpaRange[0], trimCgpaRange[1], trimPercentage)} className="w-full">Trim Data</Button>
-            </AccordionContent>
-          </AccordionItem>
         </Accordion>
-        <Button onClick={() => onGenerate(params)} disabled={isGenerating} className="w-full">
-          {isGenerating ? 'Generating...' : 'Generate Data'}
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button onClick={() => onGenerate(params)} disabled={isGenerating} className="w-full">
+            {isGenerating ? 'Generating...' : 'Generate Data'}
+          </Button>
+          <TrimDataDialog onTrim={onTrim} disabled={!isDataPresent} />
+        </div>
       </CardContent>
     </Card>
   );
