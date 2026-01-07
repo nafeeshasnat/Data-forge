@@ -55,7 +55,6 @@ export function CgpaDistributionChart({ students, params }: { students: StudentW
         students: bins[binKey] || 0,
       });
     }
-    console.log("CGPA Distribution Data:", data, "Performance Distribution:", { high: params.highPerformanceChance, mid: 1 - params.highPerformanceChance - params.lowPerformanceChance, low: params.lowPerformanceChance });
     return data;
   }, [students, params]);
 
