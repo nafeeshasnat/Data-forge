@@ -1,5 +1,6 @@
 
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { generateDataAction } from "@/app/actions";
 import type { GenerationParams, GenerationResult } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ParameterSidebar } from "@/components/app/parameter-sidebar";
 import { Dashboard } from "@/components/app/dashboard";
 import { Logo } from "@/components/app/logo";
-import { Download, BotMessageSquare } from "lucide-react";
+import { Download, BotMessageSquare, GitMerge } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 
@@ -85,9 +86,16 @@ export function MainPage() {
                     <SidebarTrigger className="md:hidden" />
                     <Logo />
                 </div>
-                <Button variant="outline" size="icon" onClick={handleDownload} disabled={!result || isLoading}>
-                    <Download className="h-4 w-4"/>
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Link to="/merge">
+                      <Button variant="outline" size="icon">
+                          <GitMerge className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Button variant="outline" size="icon" onClick={handleDownload} disabled={!result || isLoading}>
+                        <Download className="h-4 w-4"/>
+                    </Button>
+                </div>
             </header>
             <main className="flex flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
             {result && params ? (

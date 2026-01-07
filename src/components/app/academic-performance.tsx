@@ -19,7 +19,7 @@ interface AcademicPerformanceProps {
 export function AcademicPerformance({ students, summary, params }: AcademicPerformanceProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
-      <CgpaDistributionChart students={students} />
+      <CgpaDistributionChart students={students} params={params} />
       <DepartmentDistributionChart summary={summary} />
       <HscVsCgpaChart students={students} />
       <PerformanceDistributionChart summary={summary} />

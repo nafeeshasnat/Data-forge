@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Line, LineChart, XAxis, YAxis, Tooltip, CartesianGrid, Label, ResponsiveContainer } from "recharts";
-import type { StudentWithCgpa } from "@/lib/types";
+import type { StudentWithCgpa, GenerationParams } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -26,7 +26,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-export function CgpaDistributionChart({ students }: { students: StudentWithCgpa[] }) {
+export function CgpaDistributionChart({ students, params }: { students: StudentWithCgpa[], params: GenerationParams }) {
   const chartData = React.useMemo(() => {
     if (!students || students.length === 0) {
       return [];
@@ -55,8 +55,9 @@ export function CgpaDistributionChart({ students }: { students: StudentWithCgpa[
         students: bins[binKey] || 0,
       });
     }
+    console.log("CGPA Distribution Data:", data, "Performance Distribution:", { high: params.highPerformanceChance, mid: 1 - params.highPerformanceChance - params.lowPerformanceChance, low: params.lowPerformanceChance });
     return data;
-  }, [students]);
+  }, [students, params]);
 
   const chartConfig = {
     students: {

@@ -35,9 +35,9 @@ function shuffle<T>(array: T[]): T[] {
 const choice = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 const PERFORMANCE_BOUNDARIES: Record<PerformanceGroup, { ssc: [number, number], hsc: [number, number], uni: [number, number] }> = {
-    High: { ssc: [3.5, 5.0], hsc: [3.5, 5.0], uni: [3.2, 4.0] },
-    Mid:  { ssc: [2.5, 4.5], hsc: [2.5, 4.5], uni: [2.5, 3.5] },
-    Low:  { ssc: [2.0, 4.0], hsc: [2.0, 3.8], uni: [1.8, 2.8] },
+    High: { ssc: [3.5, 5.0], hsc: [3.5, 5.0], uni: [2.7, 4.0] },
+    Mid:  { ssc: [2.5, 4.5], hsc: [2.5, 4.5], uni: [2.2, 3.7] },
+    Low:  { ssc: [2.0, 4.0], hsc: [2.0, 3.8], uni: [2.0, 3.0] },
 };
 
 function selectPerformanceGroup(params: GenerationParams): PerformanceGroup {
@@ -55,7 +55,7 @@ function getExceptionalPerformanceGroup(originalGroup: PerformanceGroup): Perfor
     return Math.random() < 0.5 ? 'High' : 'Low';
 }
 
-function generateGpaInBounds(group: PerformanceGroup, type: 'ssc' | 'hsc' | 'uni'): number {
+function generateGpaInBounds(group: PerformanceGroup, type: 'ssc' | 'hsc' ): number {
     const [min, max] = PERFORMANCE_BOUNDARIES[group][type];
     return uniform(min, max);
 }
@@ -111,19 +111,18 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
       if (isPerfectScorer) {
         semesterGpa = 4.0;
       } else {
-          let semesterPerformanceGroup = performanceGroup;
+          let gpa = preGradUniGpa + uniform(-0.4, 0.4);
+
           if (performanceGroup !== 'High' && Math.random() < params.exceptionPercentage) {
-            semesterPerformanceGroup = getExceptionalPerformanceGroup(performanceGroup);
+            gpa += getExceptionalPerformanceGroup(performanceGroup) === 'High' ? 0.75 : -0.75;
           }
-          
-          const baseSemesterGpa = generateGpaInBounds(semesterPerformanceGroup, 'uni');
-          let influencedGpa = baseSemesterGpa * (1 - params.preGradScoreInfluence) + preGradUniGpa * params.preGradScoreInfluence;
 
           if (performanceGroup === 'High') {
             const perfectScorePush = (preGradUniGpa / 4.0) * params.preGradScoreInfluence;
-            influencedGpa = influencedGpa * (1 - perfectScorePush) + 4.0 * perfectScorePush;
+            gpa = gpa * (1 - perfectScorePush) + 4.0 * perfectScorePush;
           }
-          semesterGpa = influencedGpa + creditImpact(actualCredits, params);
+          
+          semesterGpa = gpa + creditImpact(actualCredits, params);
       }
 
       const attendancePercentage = randint(65, 100);
