@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ParameterSidebar } from '@/components/app/parameter-sidebar';
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { Logo } from '@/components/app/logo';
-import { BotMessageSquare, GitMerge } from 'lucide-react';
+import { BotMessageSquare, GitMerge, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 
@@ -78,6 +78,28 @@ export function MainPage() {
     });
   }, [students, params, toast]);
 
+  const handleDownload = () => {
+    if (students.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No data to download",
+        description: "Please generate a dataset first.",
+      });
+      return;
+    }
+
+    const dataStr = JSON.stringify({ students, summary, params }, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "student_dataset.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <SidebarProvider>
       <Sidebar className="border-r-0 md:w-96 md:border-r">
@@ -90,6 +112,10 @@ export function MainPage() {
             <Logo />
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleDownload} disabled={students.length === 0}>
+                <Download className="h-4 w-4 mr-2" />
+                Download Dataset
+            </Button>
             <Link to="/merge">
               <Button variant="outline" size="icon">
                 <GitMerge className="h-4 w-4" />

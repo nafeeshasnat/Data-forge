@@ -9,8 +9,7 @@ import { CreditLoadVsGradeChart } from './charts/credit-load-vs-grade-chart';
 import { AttendanceVsGradeChart } from './charts/attendance-vs-grade-chart';
 import { SemesterCountChart } from './charts/semester-count-chart';
 import { CreditDistributionChart } from './charts/credit-distribution-chart';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnalysisInsights } from './analysis-insights';
 
 interface AcademicPerformanceProps {
@@ -21,19 +20,6 @@ interface AcademicPerformanceProps {
 }
 
 export function AcademicPerformance({ students, summary, params, insights }: AcademicPerformanceProps) {
-
-  const handleDownloadLog = (title: string, data: any) => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.toLowerCase().replace(/\s+/g, '_')}_log.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
@@ -46,9 +32,6 @@ export function AcademicPerformance({ students, summary, params, insights }: Aca
         <CardContent>
           <CgpaDistributionChart students={students} params={params} />
         </CardContent>
-        <CardFooter>
-          <Button onClick={() => handleDownloadLog('CGPA Distribution', { params, students })}>Download Log</Button>
-        </CardFooter>
       </Card>
 
       <Card>
@@ -58,9 +41,6 @@ export function AcademicPerformance({ students, summary, params, insights }: Aca
         <CardContent>
           <DepartmentDistributionChart summary={summary} />
         </CardContent>
-        <CardFooter>
-          <Button onClick={() => handleDownloadLog('Department Distribution', { summary })}>Download Log</Button>
-        </CardFooter>
       </Card>
 
       <Card>
@@ -70,9 +50,6 @@ export function AcademicPerformance({ students, summary, params, insights }: Aca
         <CardContent>
           <HscVsCgpaChart students={students} />
         </CardContent>
-        <CardFooter>
-          <Button onClick={() => handleDownloadLog('HSC vs CGPA', { students })}>Download Log</Button>
-        </CardFooter>
       </Card>
 
       <Card>
@@ -82,9 +59,6 @@ export function AcademicPerformance({ students, summary, params, insights }: Aca
         <CardContent>
           <PerformanceDistributionChart summary={summary} />
         </CardContent>
-        <CardFooter>
-          <Button onClick={() => handleDownloadLog('Performance Distribution', { summary })}>Download Log</Button>
-        </CardFooter>
       </Card>
 
       <Card>
@@ -94,9 +68,6 @@ export function AcademicPerformance({ students, summary, params, insights }: Aca
         <CardContent>
           <CreditLoadVsGradeChart students={students} params={params} />
         </CardContent>
-        <CardFooter>
-          <Button onClick={() => handleDownloadLog('Credit Load vs Grade', { params, students })}>Download Log</Button>
-        </CardFooter>
       </Card>
 
       <Card>
@@ -106,9 +77,6 @@ export function AcademicPerformance({ students, summary, params, insights }: Aca
         <CardContent>
           <AttendanceVsGradeChart students={students} />
         </CardContent>
-        <CardFooter>
-          <Button onClick={() => handleDownloadLog('Attendance vs Grade', { students })}>Download Log</Button>
-        </CardFooter>
       </Card>
 
       <Card>
@@ -118,9 +86,6 @@ export function AcademicPerformance({ students, summary, params, insights }: Aca
         <CardContent>
           <SemesterCountChart students={students} />
         </CardContent>
-        <CardFooter>
-          <Button onClick={() => handleDownloadLog('Semester Count', { students })}>Download Log</Button>
-        </CardFooter>
       </Card>
 
       <Card>
@@ -130,9 +95,6 @@ export function AcademicPerformance({ students, summary, params, insights }: Aca
         <CardContent>
           <CreditDistributionChart students={students} />
         </CardContent>
-        <CardFooter>
-          <Button onClick={() => handleDownloadLog('Credit Distribution', { students })}>Download Log</Button>
-        </CardFooter>
       </Card>
     </div>
   );
