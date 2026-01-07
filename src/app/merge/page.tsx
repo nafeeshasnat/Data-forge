@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { Student, GenerationParams, AnalysisSummary, StudentWithCgpa } from '@/lib/types';
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { MergeSidebar } from '@/components/app/merge-sidebar';
-import { analyzeData } from '@/lib/analysis';
+import { AnalysisEngine } from '@/lib/engine/analysis-engine';
 
 export default function MergePage() {
   const [files, setFiles] = useState<FileList | null>(null);
@@ -20,6 +20,24 @@ export default function MergePage() {
     if (!files || files.length === 0) {
       alert('Please select files to merge.');
       return;
+    }
+
+    if (files.length === 1) {
+      const file = files[0];
+      const content = await file.text();
+      try {
+        const data = JSON.parse(content);
+        if (data.students && data.summary && data.params) {
+          setParams(data.params);
+          setSummary(data.summary);
+          setMergedStudents(data.students);
+          return;
+        }
+      } catch (error) {
+        console.error("Error parsing file:", file.name, error);
+        alert(`Error parsing file: ${file.name}. Please ensure it is a valid JSON file.`);
+        return;
+      }
     }
 
     let allStudents: Student[] = [];
@@ -57,7 +75,8 @@ export default function MergePage() {
 
     setParams(analysisParams);
 
-    const { data: studentsWithCgpa, summary } = analyzeData(allStudents, analysisParams);
+    const engine = new AnalysisEngine(allStudents, analysisParams);
+    const { data: studentsWithCgpa, summary } = engine.run();
 
     setMergedStudents(studentsWithCgpa);
     setSummary(summary);
