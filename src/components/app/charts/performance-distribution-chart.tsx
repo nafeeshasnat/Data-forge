@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
 import * as React from "react";
 import { Pie, PieChart, Cell, Tooltip, Legend } from "recharts";
-import type { DataSummary } from "@/lib/types";
+import type { AnalysisSummary } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -16,13 +16,14 @@ import {
 } from "@/components/ui/chart";
 
 const COLORS = {
-    high: "hsl(var(--chart-1))",
-    mid: "hsl(var(--chart-2))",
-    fail: "hsl(var(--destructive))",
+    High: "hsl(var(--chart-1))",
+    Mid: "hsl(var(--chart-2))",
+    Low: "hsl(var(--destructive))",
 }
 
-export function PerformanceDistributionChart({ summary }: { summary: DataSummary }) {
+export function PerformanceDistributionChart({ summary }: { summary: AnalysisSummary }) {
   const chartData = React.useMemo(() => {
+    if (!summary || !summary.performanceDistribution) return [];
     return Object.entries(summary.performanceDistribution).map(([name, value]) => ({
       name,
       value,

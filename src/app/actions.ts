@@ -1,16 +1,14 @@
 "use server";
 
 import { generateSyntheticData } from "@/lib/data-generator";
-import type { GenerationParams, Student, StudentWithCgpa, DataSummary, GenerationResult, Grade } from "@/lib/types";
+import type { GenerationParams, Student, StudentWithCgpa, GenerationResult, Grade, AnalysisSummary } from "@/lib/types";
 import { GRADE_SCALE } from "@/lib/types";
-import { DEPARTMENTS } from "@/lib/subjects";
 
-function getPerformanceGroup(cgpa: number): 'high' | 'mid' | 'fail' {
-    if (cgpa >= 3.5) return 'high';
-    if (cgpa < 2.0) return 'fail';
-    return 'mid';
+function getPerformanceGroup(cgpa: number): 'High' | 'Mid' | 'Low' {
+    if (cgpa >= 3.5) return 'High';
+    if (cgpa < 2.0) return 'Low';
+    return 'Mid';
 }
-
 
 function calculateStudentCgpa(student: Student): StudentWithCgpa {
   let totalPoints = 0;
@@ -40,10 +38,10 @@ function calculateStudentCgpa(student: Student): StudentWithCgpa {
   return { ...student, cgpa };
 }
 
-function calculateSummary(students: StudentWithCgpa[]): DataSummary {
+function calculateSummary(students: StudentWithCgpa[]): AnalysisSummary {
   const totalStudents = students.length;
   if (totalStudents === 0) {
-    return { totalStudents: 0, avgHscGpa: 0, avgCgpa: 0, departmentDistribution: {}, performanceDistribution: {} };
+    return { totalStudents: 0, avgHscGpa: "0", avgCgpa: "0", departmentDistribution: {}, performanceDistribution: {}, hscVsCgpa: [], creditLoadVsGrade: [], attendanceVsGrade: [], cgpaDistribution: {}, creditDistribution: {}, semesterCountDistribution: {}};
   }
 
   const totalHscGpa = students.reduce((sum, s) => sum + s.hsc_gpa, 0);
@@ -60,12 +58,20 @@ function calculateSummary(students: StudentWithCgpa[]): DataSummary {
     return acc;
   }, {} as Record<string, number>);
 
+  const hscVsCgpa = students.map(s => ({ hsc_gpa: s.hsc_gpa, cgpa: s.cgpa }));
+
   return {
     totalStudents,
-    avgHscGpa: parseFloat((totalHscGpa / totalStudents).toFixed(2)),
-    avgCgpa: parseFloat((totalCgpa / totalStudents).toFixed(2)),
+    avgHscGpa: (totalHscGpa / totalStudents).toFixed(2),
+    avgCgpa: (totalCgpa / totalStudents).toFixed(2),
     departmentDistribution,
     performanceDistribution,
+    hscVsCgpa,
+    creditLoadVsGrade: [], 
+    attendanceVsGrade: [],
+    cgpaDistribution: {},
+    creditDistribution: {},
+    semesterCountDistribution: {}
   };
 }
 
@@ -73,7 +79,7 @@ export async function processUploadedData(data: Student[]): Promise<GenerationRe
     try {
         const studentsWithCgpa = data.map(calculateStudentCgpa);
         const summary = calculateSummary(studentsWithCgpa);
-        const insights = "This is an analysis of the uploaded dataset. The visualizations below provide a breakdown of student demographics, academic performance, and subject distributions. You can compare this with the synthetically generated data to identify any interesting patterns or discrepancies.";
+        const insights = [];
         
         return {
             data: studentsWithCgpa,
@@ -94,8 +100,7 @@ export async function generateDataAction(params: GenerationParams): Promise<Gene
     const studentsWithCgpa = rawData.map(calculateStudentCgpa);
     const summary = calculateSummary(studentsWithCgpa);
 
-    // Mock AI insight as per project constraints
-    const insights = "The generated dataset appears well-balanced across departments and performance levels. The correlation between HSC GPA and university performance is noticeable, as expected. To explore different scenarios, try increasing the 'Max Credit Impact' to see how a heavier workload affects student grades.";
+    const insights = [];
 
     return {
       data: studentsWithCgpa,

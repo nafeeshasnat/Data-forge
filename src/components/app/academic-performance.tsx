@@ -1,6 +1,6 @@
 "use client"
 
-import type { StudentWithCgpa, GenerationSummary, GenerationParams } from "@/lib/types"
+import type { StudentWithCgpa, AnalysisSummary, GenerationParams } from "@/lib/types"
 import { CgpaDistributionChart } from "./charts/cgpa-distribution-chart"
 import { DepartmentDistributionChart } from "./charts/department-distribution-chart"
 import { HscVsCgpaChart } from "./charts/hsc-vs-cgpa-chart"
@@ -12,7 +12,7 @@ import { CreditDistributionChart } from "./charts/credit-distribution-chart"
 
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[]
-  summary: GenerationSummary
+  summary: AnalysisSummary
   params: GenerationParams
 }
 

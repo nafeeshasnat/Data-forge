@@ -27,9 +27,9 @@ export function DataPreview({ students }: DataPreviewProps) {
   return (
     <div className="grid grid-cols-1 gap-4">
       {randomStudents.map((student) => (
-        <Card key={student.studentId}>
+        <Card key={student.student_id}>
           <CardHeader>
-            <CardTitle className="text-base">{student.studentId}</CardTitle>
+            <CardTitle className="text-base">{student.student_id}</CardTitle>
             <CardDescription>
               {student.department} | {student.gender} | Age: {new Date().getFullYear() - student.birth_year}
             </CardDescription>

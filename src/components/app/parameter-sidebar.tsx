@@ -8,6 +8,7 @@ import { GenerationParams } from "@/lib/types";
 import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ThreeValueSlider } from "@/components/ui/three-value-slider";
+import { defaultParams } from '@/lib/config';
 
 interface ParameterSidebarProps {
   onGenerate: (params: GenerationParams) => void;
@@ -16,17 +17,17 @@ interface ParameterSidebarProps {
 
 export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, isGenerating }) => {
   const [params, setParams] = useState<GenerationParams>({
-    numStudents: 1000,
+    numStudents: defaultParams.studentCount,
     creditsPerSubject: 3,
-    minCredit: 12,
-    stdCredit: 15,
-    maxCredit: 21,
-    maxCreditImpact: 0.05,
+    minCredit: defaultParams.minCredits,
+    stdCredit: defaultParams.initialCredits,
+    maxCredit: defaultParams.maxCredits,
+    maxCreditImpact: defaultParams.maxCreditImpact,
     highPerformanceChance: 0.2,
     lowPerformanceChance: 0.1,
     preGradScoreInfluence: 0.2,
     exceptionPercentage: 0.1,
-    attendanceImpact: 0.1,
+    attendanceImpact: defaultParams.attendanceImpact,
   });
 
   const [distributionPoints, setDistributionPoints] = useState([params.lowPerformanceChance * 100, (1 - params.highPerformanceChance) * 100]);
@@ -104,8 +105,8 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
                     </div>
                 </div>
                  <div className="space-y-2">
-                    <Label>Credit Load Impact</Label>
-                    <Slider min={0} max={0.2} step={0.01} value={[params.maxCreditImpact]} onValueChange={(v) => setParams(p => ({...p, maxCreditImpact: v[0]}))} />
+                    <Label>Credit Load Impact: {params.maxCreditImpact.toFixed(2)}</Label>
+                    <Slider min={0} max={0.5} step={0.01} value={[params.maxCreditImpact]} onValueChange={(v) => setParams(p => ({...p, maxCreditImpact: v[0]}))} />
                 </div>
             </AccordionContent>
           </AccordionItem>

@@ -68,9 +68,13 @@ function gpaToGrade(gpa: number): Grade {
 }
 
 function creditImpact(credits: number, params: GenerationParams): number {
-  const { stdCredit, maxCredit, minCredit, maxCreditImpact } = params;
-  const deviation = (credits - stdCredit) / 20;
-  return -deviation * maxCreditImpact;
+  const { stdCredit, maxCredit, maxCreditImpact } = params;
+  if (credits <= stdCredit) {
+    return 0;
+  }
+  const deviation = (credits - stdCredit) / (maxCredit - stdCredit);
+  const impact = -Math.pow(deviation, 1.5) * maxCreditImpact / 2.0;
+  return impact;
 }
 
 export function generateSyntheticData(params: GenerationParams): Student[] {

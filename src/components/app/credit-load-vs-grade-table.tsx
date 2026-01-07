@@ -42,10 +42,9 @@ export function CreditLoadVsGradeTable({ students, params }: CreditLoadVsGradeTa
 
             let impactedGpa = semesterGpa;
             if (creditLoad > params.stdCredit) {
-              const creditDeviation = creditLoad - params.stdCredit;
-              const creditImpactFactor = 1 - params.maxCreditImpact;
-              const creditImpact = Math.pow(creditImpactFactor, creditDeviation / 2);
-              impactedGpa = semesterGpa * creditImpact;
+                const deviation = (creditLoad - params.stdCredit) / (params.maxCredit - params.stdCredit);
+                const impact = -Math.pow(deviation, 1.5) * params.maxCreditImpact / 2.0;
+                impactedGpa = semesterGpa + impact;
             }
 
             if (!creditLoadData[creditLoad]) {
