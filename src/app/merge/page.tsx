@@ -29,57 +29,51 @@ export default function MergePage() {
       return;
     }
 
-    let allStudents: Student[] = [];
-    let firstFileParams: GenerationParams | null = null;
-
-    if (files.length === 1) {
-        const file = files[0];
-        const content = await file.text();
-        try {
-            const data = JSON.parse(content);
-            if (data.students && data.summary && data.params && data.insights) {
-                setParams(data.params);
-                setSummary(data.summary);
-                setMergedStudents(data.students);
-                setInsights(data.insights);
-                toast({
-                  title: "File Loaded",
-                  description: `Loaded ${data.students.length} students from ${file.name}.`,
-                });
-                return;
-            }
-        } catch (error) {
-            console.error("Error parsing file:", file.name, error);
-            toast({
-                variant: "destructive",
-                title: "File Parse Error",
-                description: `Error parsing ${file.name}. Please ensure it is a valid JSON file.`,
-            });
-            return;
-        }
-    }
-
+    const parsedData = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const content = await file.text();
       try {
         const data = JSON.parse(content);
+        parsedData.push(data);
+      } catch (error) {
+        console.error("Error parsing file:", file.name, error);
+        toast({
+            variant: "destructive",
+            title: "File Parse Error",
+            description: `Error parsing ${file.name}. Please ensure it is a valid JSON file.`,
+        });
+        return;
+      }
+    }
+
+    if (files.length === 1) {
+        const data = parsedData[0];
+        if (data.students && data.summary && data.params && data.insights) {
+            setParams(data.params);
+            setSummary(data.summary);
+            setMergedStudents(data.students);
+            setInsights(data.insights);
+            toast({
+              title: "File Loaded",
+              description: `Loaded ${data.students.length} students from ${files[0].name}.`,
+            });
+            return;
+        }
+    }
+
+    let allStudents: Student[] = [];
+    let firstFileParams: GenerationParams | null = null;
+
+    for (let i = 0; i < parsedData.length; i++) {
+        const data = parsedData[i];
         const students = data.students || (Array.isArray(data) ? data : []);
         allStudents = [...allStudents, ...students];
 
         if (i === 0 && data.params) {
           firstFileParams = data.params;
         }
-      } catch (error) {
-        console.error("Error parsing file:", file.name, error);
-        toast({
-            variant: "destructive",
-            title: "File Parse Error",
-            description: `Error parsing ${file.name}. Please ensure it's a valid JSON file from this application.`,
-        });
-        return;
-      }
     }
 
     if (allStudents.length === 0) {
@@ -95,7 +89,6 @@ export default function MergePage() {
     if (firstFileParams) {
       analysisParams = firstFileParams;
     } else {
-      // Create default params if none are found in the first file
       analysisParams = {
         numStudents: allStudents.length,
         highPerformanceChance: 0.2,
