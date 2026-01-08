@@ -22,7 +22,7 @@ interface HscVsCgpaChartProps {
 const chartConfig = {
   cgpa: {
     label: "CGPA",
-    color: "hsl(var(--chart-4))",
+    color: "hsl(195, 74%, 65%)",
   },
 } satisfies ChartConfig;
 

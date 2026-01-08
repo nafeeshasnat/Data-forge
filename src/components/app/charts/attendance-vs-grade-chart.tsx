@@ -21,7 +21,7 @@ interface AttendanceVsGradeChartProps {
 const chartConfig = {
   avgGpa: {
     label: "Average GPA",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(266, 47.10%, 47.50%)",
   },
 } satisfies ChartConfig;
 
@@ -31,7 +31,7 @@ export function AttendanceVsGradeChart({ students }: AttendanceVsGradeChartProps
     const attendanceBins = new Map<number, { totalGpa: number; count: number }>();
 
     students.forEach(student => {
-      const attendanceBin = Math.floor(student.avg_attendance);
+      const attendanceBin = Math.round(student.avg_attendance / 1) * 1;
       if (!attendanceBins.has(attendanceBin)) {
         attendanceBins.set(attendanceBin, { totalGpa: 0, count: 0 });
       }
@@ -50,24 +50,24 @@ export function AttendanceVsGradeChart({ students }: AttendanceVsGradeChartProps
     <Card className='col-span-1'>
       <CardHeader>
         <CardTitle>Attendance vs. Average Semester Grade</CardTitle>
-        <CardDescription>Average GPA for different attendance percentages.</CardDescription>
+        <CardDescription>Average GPA for different attendance levels.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[350px] w-full">
-          <LineChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis type="number" dataKey="attendance" unit="%" domain={['dataMin', 'dataMax']}>
-              <Label value="Attendance Percentage" offset={-15} position="insideBottom" />
-            </XAxis>
-            <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} tickFormatter={(tick) => tick.toFixed(2)}>
-                <Label value="Average Semester GPA" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
-            </YAxis>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent indicator="dot" />}
-            />
-            <Line type="monotone" dataKey="avgGpa" stroke="var(--color-avgGpa)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }}/>
-          </LineChart>
+            <LineChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" dataKey="attendance" domain={['dataMin - 10', 'dataMax + 10']}>
+                    <Label value="Attendance Percentage" offset={-15} position="insideBottom" />
+                </XAxis>
+                <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} tickFormatter={(tick) => tick.toFixed(2)}>
+                    <Label value="Average Semester GPA" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
+                </YAxis>
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dot" />}
+                />
+                <Line type="monotone" dataKey="avgGpa" stroke="var(--color-avgGpa)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }}/>
+            </LineChart>
         </ChartContainer>
       </CardContent>
     </Card>

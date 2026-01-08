@@ -1,6 +1,6 @@
 'use client';
 
-import type { Student, StudentWithCgpa, AnalysisSummary, PerformanceGroup, GenerationParams, Grade } from "@/lib/types";
+import type { Student, StudentWithCgpa, AnalysisSummary, PerformanceGroup, GenerationParams, Grade, Semester, StudentWithSemesterDetails } from "@/lib/types";
 
 const GRADE_SCALE: Record<Grade, number> = {
     'A+': 4.0,
@@ -65,7 +65,8 @@ export class AnalysisEngine {
   public run(): { data: StudentWithCgpa[], summary: AnalysisSummary, insights: string[] } {
     const summary = this.calculateSummary(this.studentsWithCgpa);
     const insights = this.generateInsights(summary);
-    return { data: this.studentsWithCgpa, summary, insights };
+    const studentsWithSemesterDetails = this.studentsWithCgpa.map(student => this.addSemesterDetails(student));
+    return { data: studentsWithSemesterDetails, summary, insights };
   }
   
   /**
@@ -192,6 +193,32 @@ export class AnalysisEngine {
         performanceGroup: this.classifyPerformance(cgpa),
         avg_credit_load: parseFloat(avg_credit_load.toFixed(2)),
         avg_attendance: parseFloat(avg_attendance.toFixed(2)),
+    };
+  }
+
+  private addSemesterDetails(student: StudentWithCgpa): StudentWithSemesterDetails {
+    const semesterDetails = Object.values(student.semesters).map(semester => {
+        let semesterGradePoints = 0;
+        let semesterCredits = 0;
+
+        for (const subject in semester) {
+            if (subject !== 'creditHours' && subject !== 'attendancePercentage') {
+                const grade = semester[subject] as keyof typeof GRADE_SCALE;
+                semesterGradePoints += (GRADE_SCALE[grade] || 0) * this.params.creditsPerSubject;
+                semesterCredits += this.params.creditsPerSubject;
+            }
+        }
+
+        const semesterGpa = semesterCredits > 0 ? parseFloat((semesterGradePoints / semesterCredits).toFixed(2)) : 0;
+        return {
+            gpa: semesterGpa,
+            creditLoad: semesterCredits,
+        };
+    });
+
+    return {
+        ...student,
+        semesterDetails,
     };
   }
 
