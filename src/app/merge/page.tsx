@@ -194,7 +194,35 @@ export default function MergePage() {
             </CardContent>
           </Card>
         ) : (mergedStudents && mergedStudents.length > 0 && summary) ? (
-            <AcademicPerformance students={mergedStudents} summary={summary} params={params} insights={insights} isMergePage={true} />
+            <>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Students
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {mergedStudents.length}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Credits
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {mergedStudents.reduce((acc, student) => acc + student.total_credits_earned, 0)}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              <AcademicPerformance students={mergedStudents} summary={summary} params={params} insights={insights} isMergePage={true} />
+            </>
         ) : (
             <div className="flex items-center justify-center h-full text-center p-8 border rounded-lg bg-card">
                 <div>
