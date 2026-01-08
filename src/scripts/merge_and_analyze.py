@@ -122,7 +122,7 @@ def analyze_data(students_df):
         return {
             'hsc_vs_cgpa_density': [], 
             'performance_distribution': [], 
-            'department_distribution': {},
+            'department_distribution': [],
             'cgpa_distribution': [],
             'credit_load_vs_grade': [],
             'semester_count_distribution': [],
@@ -159,7 +159,12 @@ def analyze_data(students_df):
         {'name': index, 'value': value}
         for index, value in performance_dist_series.items()
     ]
-    summary['department_distribution'] = students_df['department'].value_counts().to_dict()
+    
+    department_dist_series = students_df['department'].value_counts()
+    summary['department_distribution'] = [
+        {'name': index, 'value': value}
+        for index, value in department_dist_series.items()
+    ]
 
     # HSC vs CGPA Density (only if pre_grad_gpa data exists)
     density_df = students_df.dropna(subset=['pre_grad_gpa', 'cgpa'])
