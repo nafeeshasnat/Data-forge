@@ -71,8 +71,11 @@ export default function MergePage() {
       }
 
       const result = await response.json();
-      console.log("Debug students:", result.students);
       const camelCaseResult = toCamelCase(result);
+
+      const dataSize = JSON.stringify(camelCaseResult).length;
+      console.log("Data received from backend:", camelCaseResult);
+      console.log("Size of the received data (in bytes):", dataSize);
 
       // Add totalStudents to the summary
       if (camelCaseResult.summary) {
