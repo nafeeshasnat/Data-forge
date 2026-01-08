@@ -184,15 +184,15 @@ export class AnalysisEngine {
     }
 
     const cgpa = totalCredits > 0 ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0;
-    const avg_credit_load = semesterCount > 0 ? totalCredits / semesterCount : 0;
-    const avg_attendance = semesterCount > 0 ? totalAttendance / semesterCount : 0;
+    const avgCreditLoad = semesterCount > 0 ? totalCredits / semesterCount : 0;
+    const avgAttendance = semesterCount > 0 ? totalAttendance / semesterCount : 0;
 
     return {
         ...student,
         cgpa,
         performanceGroup: this.classifyPerformance(cgpa),
-        avg_credit_load: parseFloat(avg_credit_load.toFixed(2)),
-        avg_attendance: parseFloat(avg_attendance.toFixed(2)),
+        avgCreditLoad: parseFloat(avgCreditLoad.toFixed(2)),
+        avgAttendance: parseFloat(avgAttendance.toFixed(2)),
     };
   }
 
@@ -240,10 +240,10 @@ export class AnalysisEngine {
       return { totalStudents: 0, avgHscGpa: 0, avgCgpa: 0, departmentDistribution: {}, performanceDistribution: {} };
     }
 
-    const totalHscGpa = students.reduce((sum, s) => sum + s.hsc_gpa, 0);
+    const totalHscGpa = students.reduce((sum, s) => sum + s.hscGpa, 0);
     const totalCgpa = students.reduce((sum, s) => sum + s.cgpa, 0);
-    const totalAvgCreditLoad = students.reduce((sum, s) => sum + (s.avg_credit_load || 0), 0);
-    const totalAvgAttendance = students.reduce((sum, s) => sum + (s.avg_attendance || 0), 0);
+    const totalAvgCreditLoad = students.reduce((sum, s) => sum + (s.avgCreditLoad || 0), 0);
+    const totalAvgAttendance = students.reduce((sum, s) => sum + (s.avgAttendance || 0), 0);
 
     const departmentDistribution = students.reduce((acc, s) => {
       acc[s.department] = (acc[s.department] || 0) + 1;
@@ -261,8 +261,8 @@ export class AnalysisEngine {
       avgCgpa: parseFloat((totalCgpa / totalStudents).toFixed(2)),
       departmentDistribution,
       performanceDistribution,
-      average_credit_load: parseFloat((totalAvgCreditLoad / totalStudents).toFixed(2)),
-      avg_attendance: parseFloat((totalAvgAttendance / totalStudents).toFixed(2)),
+      avgCreditLoad: parseFloat((totalAvgCreditLoad / totalStudents).toFixed(2)),
+      avgAttendance: parseFloat((totalAvgAttendance / totalStudents).toFixed(2)),
     };
   }
 }

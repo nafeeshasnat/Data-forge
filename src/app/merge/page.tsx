@@ -11,6 +11,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+// Function to convert snake_case keys to camelCase
+const toCamelCase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toCamelCase(v));
+  } else if (obj !== null && obj.constructor === Object) {
+    return Object.keys(obj).reduce((result, key) => {
+      const camelKey = key.replace(/([-_][a-z])/g, (group) =>
+        group.toUpperCase().replace('-', '').replace('_', '')
+      );
+      result[camelKey] = toCamelCase(obj[key]);
+      return result;
+    }, {} as any);
+  }
+  return obj;
+};
+
 export default function MergePage() {
   const [files, setFiles] = useState<FileList | null>(null);
   const [mergedStudents, setMergedStudents] = useState<StudentWithCgpa[]>([]);
@@ -55,11 +71,17 @@ export default function MergePage() {
       }
 
       const result = await response.json();
+      const camelCaseResult = toCamelCase(result);
+
+      // Add totalStudents to the summary
+      if (camelCaseResult.summary) {
+        camelCaseResult.summary.totalStudents = camelCaseResult.students.length;
+      }
       
-      setParams(result.params || null);
-      setSummary(result.summary || null);
-      setMergedStudents(result.students || []);
-      setInsights(result.insights || []);
+      setParams(camelCaseResult.params || null);
+      setSummary(camelCaseResult.summary || null);
+      setMergedStudents(camelCaseResult.students || []);
+      setInsights(camelCaseResult.insights || []);
       setPlainText(''); // Clear plain text view
 
       toast({

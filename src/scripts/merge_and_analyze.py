@@ -16,7 +16,7 @@ GRADE_TO_GPA = {
 NON_COURSE_KEYS = {"creditHours", "creditLoad", "credits", "attendancePercentage", "gpa", "grade", "score"}
 
 def calculate_semester_gpa(semester_data):
-    "Calculates the GPA for a single semester from its course grades."
+    """Calculates the GPA for a single semester from its course grades."""
     total_gpa_points = 0
     course_count = 0
 
@@ -72,7 +72,7 @@ def process_student_data(students):
         total_attendance = sum(s.get("attendancePercentage", 0) for s in student["semesterDetails"])
         semester_count = len(student["semesterDetails"])
 
-        student['avg_attendance'] = total_attendance / semester_count if semester_count > 0 else 0
+        student['avgAttendance'] = total_attendance / semester_count if semester_count > 0 else 0
         
         processed_students.append(student)
     return processed_students
@@ -86,14 +86,14 @@ def analyze_data(students_df):
 
     bins = [0, 2.5, 3.5, 4.0]
     labels = ['Low', 'Mid', 'High']
-    students_df['performance_group'] = pd.cut(students_df['cgpa'], bins=bins, labels=labels, include_lowest=True)
-    summary['performanceDistribution'] = students_df['performance_group'].value_counts().to_dict()
+    students_df['performanceGroup'] = pd.cut(students_df['cgpa'], bins=bins, labels=labels, include_lowest=True)
+    summary['performanceDistribution'] = students_df['performanceGroup'].value_counts().to_dict()
     summary['departmentDistribution'] = students_df['department'].value_counts().to_dict()
 
-    if 'hsc_gpa' in students_df.columns and not students_df['hsc_gpa'].empty:
+    if 'hscGpa' in students_df.columns and not students_df['hscGpa'].empty:
         x_bins, y_bins = 20, 20
         x_bin_width, y_bin_width = (5.0 - 0.0) / x_bins, (4.0 - 0.0) / y_bins
-        students_df['x_bin'] = np.floor((students_df['hsc_gpa'] - 0.0) / x_bin_width).astype(int).clip(0, x_bins - 1)
+        students_df['x_bin'] = np.floor((students_df['hscGpa'] - 0.0) / x_bin_width).astype(int).clip(0, x_bins - 1)
         students_df['y_bin'] = np.floor((students_df['cgpa'] - 0.0) / y_bin_width).astype(int).clip(0, y_bins - 1)
         bin_counts = students_df.groupby(['x_bin', 'y_bin']).size().reset_index(name='count')
         summary['hscVsCgpaDensity'] = [
@@ -105,20 +105,20 @@ def analyze_data(students_df):
         summary['hscVsCgpaDensity'] = []
 
     summary['avgCgpa'] = students_df['cgpa'].mean()
-    summary['median_cgpa'] = students_df['cgpa'].median()
-    summary['top_performers'] = students_df.nlargest(5, 'cgpa').to_dict('records')
-    summary['low_performers'] = students_df.nsmallest(5, 'cgpa').to_dict('records')
+    summary['medianCgpa'] = students_df['cgpa'].median()
+    summary['topPerformers'] = students_df.nlargest(5, 'cgpa').to_dict('records')
+    summary['lowPerformers'] = students_df.nsmallest(5, 'cgpa').to_dict('records')
 
     low_attendance_threshold = 75
-    summary['avg_attendance'] = students_df['avg_attendance'].mean()
-    summary['low_attendance_students'] = students_df[students_df['avg_attendance'] < low_attendance_threshold].to_dict('records')
+    summary['avgAttendance'] = students_df['avgAttendance'].mean()
+    summary['lowAttendanceStudents'] = students_df[students_df['avgAttendance'] < low_attendance_threshold].to_dict('records')
 
     if summary['avgCgpa'] < 2.8:
         insights.append(f"The average CGPA of {summary['avgCgpa']:.2f} is concerning.")
-    if len(summary['low_performers']) > 0:
-        insights.append(f"{len(summary['low_performers'])} students need immediate attention.")
-    if len(summary['low_attendance_students']) > 0:
-        insights.append(f"{len(summary['low_attendance_students'])} students have low attendance.")
+    if len(summary['lowPerformers']) > 0:
+        insights.append(f"{len(summary['lowPerformers'])} students need immediate attention.")
+    if len(summary['lowAttendanceStudents']) > 0:
+        insights.append(f"{len(summary['lowAttendanceStudents'])} students have low attendance.")
     if not insights:
         insights.append("The dataset appears healthy.")
 
@@ -147,15 +147,15 @@ def main():
     processed_students = process_student_data(all_students)
     students_df = pd.DataFrame(processed_students)
     
-    if 'total_credits_required' not in students_df.columns:
-        students_df['total_credits_required'] = 130
+    if 'totalCreditsRequired' not in students_df.columns:
+        students_df['totalCreditsRequired'] = 130
     else:
-        students_df['total_credits_required'].fillna(130, inplace=True)
+        students_df['totalCreditsRequired'].fillna(130, inplace=True)
 
     if 'hscGpa' in students_df.columns:
-        students_df.rename(columns={'hscGpa': 'hsc_gpa'}, inplace=True)
-    if 'hsc_gpa' in students_df.columns:
-        students_df['hsc_gpa'] = pd.to_numeric(students_df['hsc_gpa'], errors='coerce').fillna(0)
+        students_df.rename(columns={'hscGpa': 'hscGpa'}, inplace=True)
+    if 'hscGpa' in students_df.columns:
+        students_df['hscGpa'] = pd.to_numeric(students_df['hscGpa'], errors='coerce').fillna(0)
     
     summary, insights = analyze_data(students_df)
 

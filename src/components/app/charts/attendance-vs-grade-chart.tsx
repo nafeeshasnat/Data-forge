@@ -31,7 +31,7 @@ export function AttendanceVsGradeChart({ students }: AttendanceVsGradeChartProps
     const attendanceBins = new Map<number, { totalGpa: number; count: number }>();
 
     students.forEach(student => {
-      const attendanceBin = Math.round(student.avg_attendance / 1) * 1;
+      const attendanceBin = Math.round(student.avgAttendance / 1) * 1;
       if (!attendanceBins.has(attendanceBin)) {
         attendanceBins.set(attendanceBin, { totalGpa: 0, count: 0 });
       }

@@ -10,15 +10,15 @@ export interface Semester {
 export interface Student {
     id: string;
     department: string;
-    hsc_gpa: number;
+    hscGpa: number;
     semesters: Record<string, Semester>; // e.g., { '1-1': { CSE101: 'A+', ... } }
 }
 
 export interface StudentWithCgpa extends Student {
     cgpa: number;
     performanceGroup: PerformanceGroup;
-    avg_credit_load: number;
-    avg_attendance: number;
+    avgCreditLoad: number;
+    avgAttendance: number;
 }
 
 export interface SemesterDetail {
@@ -51,8 +51,8 @@ export interface AnalysisSummary {
     avgCgpa: number;
     departmentDistribution: Record<string, number>;
     performanceDistribution: Record<string, number>;
-    average_credit_load?: number;
-    average_attendance?: number;
+    avgCreditLoad?: number;
+    avgAttendance?: number;
 }
 
 export interface ChartProps {

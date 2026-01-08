@@ -52,7 +52,7 @@ export function HscVsCgpaDensityChart({ summary }: { summary: AnalysisSummary })
             }}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis type="number" dataKey="preGpa" name="Pre-Grad GPA" domain={[0, 5]} tickFormatter={(tick) => tick.toFixed(1)}>
+            <XAxis type="number" dataKey="preGpa" name="Pre-Grad GPA" domain={[2, 5]} tickFormatter={(tick) => tick.toFixed(1)}>
                 <Label value="Pre-Graduation GPA" offset={-15} position="insideBottom" />
             </XAxis>
             <YAxis type="number" dataKey="uniCgpa" name="University CGPA" domain={[0, 4]} tickFormatter={(tick) => tick.toFixed(1)}>
