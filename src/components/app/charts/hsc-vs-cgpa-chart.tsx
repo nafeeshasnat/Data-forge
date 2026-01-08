@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { StudentWithCgpa } from '@/lib/types';
+import { getHscVsCgpaData } from '@/lib/chart-data-utils';
 
 interface HscVsCgpaChartProps {
   students: StudentWithCgpa[];
@@ -27,13 +28,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function HscVsCgpaChart({ students }: HscVsCgpaChartProps) {
-  const data = useMemo(() => {
-    if (!students) return [];
-    return students.map(student => ({
-      hscGpa: student.hsc_gpa,
-      cgpa: student.cgpa,
-    }));
-  }, [students]);
+  const data = useMemo(() => getHscVsCgpaData(students), [students]);
 
   return (
     <Card className='col-span-1'>

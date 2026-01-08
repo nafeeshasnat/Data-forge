@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Line, LineChart, XAxis, YAxis, Tooltip, CartesianGrid, Label, ResponsiveContainer } from "recharts";
-import type { StudentWithCgpa, GenerationParams } from "@/lib/types";
+import type { StudentWithCgpa, CgpaDistribution } from "@/lib/types";
+import { getCgpaDistributionData } from "@/lib/chart-data-utils";
 import {
   Card,
   CardContent,
@@ -26,37 +27,21 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-export function CgpaDistributionChart({ students, params }: { students: StudentWithCgpa[], params: GenerationParams }) {
+interface CgpaDistributionChartProps {
+    students?: StudentWithCgpa[];
+    data?: CgpaDistribution[];
+}
+
+export function CgpaDistributionChart({ students, data }: CgpaDistributionChartProps) {
   const chartData = React.useMemo(() => {
-    if (!students || students.length === 0) {
-      return [];
+    if (data) {
+        return data;
     }
-
-    const bins: Record<string, number> = {};
-    const binSize = 0.2;
-
-    students.forEach(student => {
-      // Adjust CGPA of 4.0 to fall into the last bin
-      const adjustedCgpa = student.cgpa >= 4.0 ? 3.99 : student.cgpa;
-      const bin = Math.floor(adjustedCgpa / binSize) * binSize;
-      const binKey = bin.toFixed(2);
-      if (!bins[binKey]) {
-        bins[binKey] = 0;
-      }
-      bins[binKey]++;
-    });
-
-    const data = [];
-    // The loop should not include 4.0 as it's the upper bound.
-    for (let i = 0; i < 4.0; i += binSize) {
-      const binKey = i.toFixed(2);
-      data.push({
-        cgpa: i + binSize / 2,
-        students: bins[binKey] || 0,
-      });
+    if (students) {
+        return getCgpaDistributionData(students);
     }
-    return data;
-  }, [students, params]);
+    return [];
+  }, [students, data]);
 
   const chartConfig = {
     students: {

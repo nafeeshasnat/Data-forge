@@ -56,10 +56,12 @@ def process_student_data(students):
 
         # --- Standardize Semester Structure (dict to list) ---
         semesters_list = []
-        if "semesters" in student:
+        if "semesters" in student and isinstance(student.get("semesters"), dict):
              semesters_list = list(student["semesters"].values())
         elif "semesterDetails" in student and isinstance(student.get("semesterDetails"), list):
              semesters_list = student["semesterDetails"]
+        elif "semesters" in student and isinstance(student.get("semesters"), list):
+            semesters_list = student["semesters"]
         
         student["semesters"] = semesters_list # Replace original with list
         if "semesterDetails" in student: # Clean up old key
@@ -77,6 +79,8 @@ def process_student_data(students):
             credit_keys = ['creditLoad', 'creditHours', 'credits']
             credit_val = np.nan
             search_loc = semester.get("details", semester)
+            if not isinstance(search_loc, dict):
+                search_loc = semester
             for key in credit_keys:
                 if key in search_loc:
                     try:
@@ -115,12 +119,38 @@ def analyze_data(students_df):
     # Drop students with NaN CGPA for accurate analysis
     students_df.dropna(subset=['cgpa'], inplace=True)
     if students_df.empty:
-        return {'hsc_vs_cgpa_density': [], 'performance_distribution': {}, 'department_distribution': {}}, []
+        return {
+            'hsc_vs_cgpa_density': [], 
+            'performance_distribution': {}, 
+            'department_distribution': {}, 
+            'cgpa_distribution': []
+        }, []
+
+    # CGPA Distribution data
+    bins = {}
+    bin_size = 0.2
+    for cgpa in students_df['cgpa']:
+        adjusted_cgpa = 3.99 if cgpa >= 4.0 else cgpa
+        if pd.notna(adjusted_cgpa):
+            bin_val = np.floor(adjusted_cgpa / bin_size) * bin_size
+            bin_key = f"{bin_val:.2f}"
+            bins[bin_key] = bins.get(bin_key, 0) + 1
+            
+    cgpa_dist_data = []
+    i = 0.0
+    while i < 4.0:
+        bin_key = f"{i:.2f}"
+        cgpa_dist_data.append({
+            "cgpa": i + bin_size / 2,
+            "students": bins.get(bin_key, 0)
+        })
+        i += bin_size
+    summary['cgpa_distribution'] = cgpa_dist_data
 
     # Performance Distribution
-    bins = [0, 2.5, 3.5, 4.0]
+    perf_bins = [0, 2.5, 3.5, 4.0]
     labels = ['Low', 'Mid', 'High']
-    students_df['performance_group'] = pd.cut(students_df['cgpa'], bins=bins, labels=labels, include_lowest=True)
+    students_df['performance_group'] = pd.cut(students_df['cgpa'], bins=perf_bins, labels=labels, include_lowest=True)
     summary['performance_distribution'] = students_df['performance_group'].value_counts().to_dict()
     summary['department_distribution'] = students_df['department'].value_counts().to_dict()
 
@@ -183,14 +213,21 @@ def main():
         try:
             with open(file_path, 'r') as f:
                 data = json.load(f)
-                students_to_extend = data.get('students', data if isinstance(data, list) else [])
+                # Check if data is a dictionary and has 'students' key
+                if isinstance(data, dict) and 'students' in data:
+                    students_to_extend = data['students']
+                # Check if data is a list
+                elif isinstance(data, list):
+                    students_to_extend = data
+                else:
+                    students_to_extend = []
                 all_students.extend(students_to_extend)
-        except (json.JSONDecodeError, FileNotFoundError):
-            print(json.dumps({"error": f"Failed to read or parse {file_path}"}), file=sys.stderr)
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            print(json.dumps({"error": f"Failed to read or parse {file_path}: {str(e)}"}), file=sys.stderr)
             continue
 
     if not all_students:
-        print(json.dumps({"error": "No valid student data found in files"}), file=sys.stderr)
+        print(json.dumps({"error": "No valid student data found in any of the provided files"}), file=sys.stderr)
         sys.exit(1)
 
     processed_students = process_student_data(all_students)
@@ -198,7 +235,6 @@ def main():
     
     summary, insights = analyze_data(students_df)
 
-    # Convert numpy types to native Python types for JSON serialization
     def convert_numpy_types(obj):
         if isinstance(obj, dict):
             return {k: convert_numpy_types(v) for k, v in obj.items()}
@@ -214,11 +250,10 @@ def main():
             return None
         return obj
 
-
     summary = convert_numpy_types(summary)
     
-    # Convert DataFrame to JSON-compatible format, handling NaN
-    students_json = json.loads(students_df.to_json(orient='records', default_handler=lambda x: None if pd.isna(x) else x))
+    students_df.replace({np.nan: None}, inplace=True)
+    students_json = students_df.to_dict('records')
 
     result = {
         "summary": summary,
@@ -226,7 +261,7 @@ def main():
         "students": students_json,
         "params": {"std_credit": 18, "max_credit_impact": 0.15}
     }
-    print(json.dumps(result, indent=2, allow_nan=False))
+    print(json.dumps(result, indent=2))
 
 if __name__ == "__main__":
     main()

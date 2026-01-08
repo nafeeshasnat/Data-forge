@@ -91,7 +91,10 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
           <CardTitle>CGPA Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <CgpaDistributionChart students={students} params={params} />
+          <CgpaDistributionChart 
+            students={isMergePage ? undefined : students} 
+            data={isMergePage ? summary.cgpaDistribution : undefined} 
+          />
         </CardContent>
       </Card>
 

@@ -88,7 +88,7 @@ export function MainPage() {
       return;
     }
 
-    const dataStr = JSON.stringify({ students, summary, params }, null, 2);
+    const dataStr = JSON.stringify(students, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
