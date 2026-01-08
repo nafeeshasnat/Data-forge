@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import type { StudentWithCgpa } from '@/lib/types';
+import type { Semester, StudentWithCgpa } from '@/lib/types';
 
 interface AttendanceVsGradeChartProps {
   students: StudentWithCgpa[];
@@ -25,21 +25,43 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const GRADE_SCALE: Record<string, number> = {
+    "A+": 4.00, "A": 3.75, "A-": 3.50,
+    "B+": 3.25, "B": 3.00, "B-": 2.75,
+    "C+": 2.50, "C": 2.25,
+    "D": 2.00, "F": 0.00
+};
+
+// Helper function to calculate GPA from a semester's grades
+const calculateGpaFromGrades = (semester: Omit<Semester, 'creditHours' | 'attendancePercentage'>): number => {
+    let totalPoints = 0;
+    let subjectCount = 0;
+    for (const key in semester) {
+        const grade = semester[key as keyof typeof semester];
+        if (typeof grade === 'string' && GRADE_SCALE[grade] !== undefined) {
+            totalPoints += GRADE_SCALE[grade];
+            subjectCount++;
+        }
+    }
+    return subjectCount > 0 ? totalPoints / subjectCount : 0;
+};
+
 export function AttendanceVsGradeChart({ students }: AttendanceVsGradeChartProps) {
   const data = useMemo(() => {
     if (!students) return [];
     const attendanceBins = new Map<number, { totalGpa: number; count: number }>();
 
     students.forEach(student => {
-      if (student.semesters && Array.isArray(student.semesters)) {
-        student.semesters.forEach(semester => {
-          if (semester && semester.attendancePercentage != null && semester.gpa != null) {
-            const attendanceBin = Math.round(semester.attendancePercentage / 5) * 5; // Bin by 5%
+      if (student.semesters && typeof student.semesters === 'object') {
+        Object.values(student.semesters).forEach((semester: any) => {
+          const gpa = calculateGpaFromGrades(semester);
+          if (semester && semester.attendancePercentage != null && gpa != null) {
+            const attendanceBin = Math.round(semester.attendancePercentage / 2) * 5; // Bin by 5%
             if (!attendanceBins.has(attendanceBin)) {
               attendanceBins.set(attendanceBin, { totalGpa: 0, count: 0 });
             }
             const bin = attendanceBins.get(attendanceBin)!;
-            bin.totalGpa += semester.gpa;
+            bin.totalGpa += gpa;
             bin.count++;
           }
         });
