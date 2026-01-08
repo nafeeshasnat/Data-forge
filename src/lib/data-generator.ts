@@ -1,10 +1,11 @@
 import type { GenerationParams, Student, Semester, Grade, PerformanceGroup } from './types';
 import { DEPARTMENTS, SUBJECTS } from './subjects';
+import { SUBJECT_COUNT } from '@/lib/config';
 
 function generateSubjectPool(department: string): string[] {
     const baseSubjects = SUBJECTS[department];
     const subjectPool: string[] = [];
-    const totalSubjects = 60;
+    const totalSubjects = SUBJECT_COUNT;
     for (let i = 0; i < totalSubjects; i++) {
         subjectPool.push(`${baseSubjects[i % baseSubjects.length]}`);
     }
@@ -82,7 +83,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
   const currentYear = new Date().getFullYear();
   const maxBirthYear = currentYear - 18;
   const minBirthYear = maxBirthYear - 7;
-  const totalCreditsRequired = 60 * params.creditsPerSubject;
+  const totalCreditsRequired = SUBJECT_COUNT * params.creditsPerSubject;
 
   for (let sid = 1; sid <= params.numStudents; sid++) {
     const performanceGroup = selectPerformanceGroup(params);
@@ -95,7 +96,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     const isPerfectScorer = performanceGroup === 'High' && preGradUniGpa > 3.8 && Math.random() < 0.8;
 
     const fullSubjectPool = generateSubjectPool(department);
-    const studentSubjectPool = shuffle([...fullSubjectPool]).slice(0, 60);
+    const studentSubjectPool = shuffle([...fullSubjectPool]).slice(0, SUBJECT_COUNT);
 
     const semesters: Record<string, Semester> = {};
     let semesterId = 1;

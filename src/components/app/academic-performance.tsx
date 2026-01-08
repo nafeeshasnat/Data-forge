@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnalysisInsights } from './analysis-insights';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
+import { SUBJECT_COUNT } from '@/lib/config';
 
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[];
@@ -23,8 +24,8 @@ interface AcademicPerformanceProps {
   isMergePage?: boolean;
 }
 
-function StatsGrid({ summary, students }: { summary: AnalysisSummary, students: StudentWithCgpa[] }) {
-    const totalCreditsRequired = students.length > 0 ? (students[0] as any).totalCreditsRequired || 130 : 130;
+function StatsGrid({ summary, params }: { summary: AnalysisSummary, params: GenerationParams | null }) {
+    const totalCreditsRequired = (params && params.creditsPerSubject) ? SUBJECT_COUNT * params.creditsPerSubject : SUBJECT_COUNT * 3;
     const avgCgpa = summary.avgCgpa != null ? summary.avgCgpa.toFixed(2) : 'N/A';
     const avgAttendance = summary.avgAttendance ? `${summary.avgAttendance.toFixed(2)}%` : 'N/A';
 
@@ -80,7 +81,7 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-            <StatsGrid summary={summary} students={students} />
+            <StatsGrid summary={summary} params={params} />
         </div>
         <div className="md:col-span-2">
             <AnalysisInsights insights={insights} />

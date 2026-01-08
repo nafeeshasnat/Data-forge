@@ -1,3 +1,5 @@
+'use client';
+
 export const defaultParams = {
   studentCount: 1000,
   hscGpaMean: 4.5,
@@ -17,3 +19,5 @@ export const defaultParams = {
   passingGrade: 2.0,
   maxGrade: 4.0,
 };
+
+export const SUBJECT_COUNT = defaultParams.subjectCount;
