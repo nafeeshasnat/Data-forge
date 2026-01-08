@@ -32,6 +32,7 @@ export function CreditLoadVsGradeChart({ students }: CreditLoadVsGradeChartProps
     const creditBins = new Map<number, { totalGpa: number; count: number }>();
 
     students.forEach(student => {
+      if (student.semesterDetails) {
         student.semesterDetails.forEach(semester => {
             const creditBin = Math.round(semester.creditLoad / 3) * 3;
             if (!creditBins.has(creditBin)) {
@@ -41,6 +42,7 @@ export function CreditLoadVsGradeChart({ students }: CreditLoadVsGradeChartProps
             bin.totalGpa += semester.gpa;
             bin.count++;
         });
+      }
     });
 
     return Array.from(creditBins.entries()).map(([creditLoad, { totalGpa, count }]) => ({

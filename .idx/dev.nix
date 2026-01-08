@@ -9,6 +9,8 @@
     pkgs.zulu
     (pkgs.python3.withPackages (ps: [
       ps.pandas
+      ps.numpy
+      ps.pip
     ]))
     pkgs.sudo
   ];

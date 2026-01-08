@@ -45,12 +45,12 @@ export function HscVsCgpaChart({ students }: HscVsCgpaChartProps) {
         <ChartContainer config={chartConfig} className="h-[350px] w-full">
           <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <YAxis type="number" dataKey="hscGpa" domain={[2, 5]} tickFormatter={(tick) => tick.toFixed(1)}>
-              <Label value="HSC GPA" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
-            </YAxis>
-            <XAxis type="number" dataKey="cgpa" domain={[0, 4]} tickFormatter={(tick) => tick.toFixed(1)}>
-              <Label value="University CGPA" offset={-15} position="insideBottom" />
+            <XAxis type="number" dataKey="hscGpa" domain={[2, 5]} tickFormatter={(tick) => tick.toFixed(1)}>
+              <Label value="HSC GPA" offset={-15} position="insideBottom" />
             </XAxis>
+            <YAxis type="number" dataKey="cgpa" domain={[0, 4]} tickFormatter={(tick) => tick.toFixed(1)}>
+              <Label value="University CGPA" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
+            </YAxis>
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator="dot" />}
