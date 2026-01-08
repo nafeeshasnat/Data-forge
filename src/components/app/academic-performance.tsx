@@ -26,7 +26,7 @@ interface AcademicPerformanceProps {
 function StatsGrid({ summary, students }: { summary: AnalysisSummary, students: StudentWithCgpa[] }) {
     const totalCreditsRequired = students.length > 0 ? students[0].total_credits_required : 130;
     const avgCgpa = summary.avgCgpa != null ? summary.avgCgpa.toFixed(2) : 'N/A';
-    const avgAttendance = summary.average_attendance ? `${summary.average_attendance.toFixed(2)}%` : 'N/A';
+    const avgAttendance = summary.avg_attendance ? `${summary.avg_attendance.toFixed(2)}%` : 'N/A';
 
     return (
         <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-4">

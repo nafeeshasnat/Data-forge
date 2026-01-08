@@ -262,7 +262,7 @@ export class AnalysisEngine {
       departmentDistribution,
       performanceDistribution,
       average_credit_load: parseFloat((totalAvgCreditLoad / totalStudents).toFixed(2)),
-      average_attendance: parseFloat((totalAvgAttendance / totalStudents).toFixed(2)),
+      avg_attendance: parseFloat((totalAvgAttendance / totalStudents).toFixed(2)),
     };
   }
 }

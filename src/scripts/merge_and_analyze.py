@@ -16,7 +16,7 @@ GRADE_TO_GPA = {
 NON_COURSE_KEYS = {"creditHours", "creditLoad", "credits", "attendancePercentage", "gpa", "grade", "score"}
 
 def calculate_semester_gpa(semester_data):
-    """Calculates the GPA for a single semester from its course grades."""
+    "Calculates the GPA for a single semester from its course grades."
     total_gpa_points = 0
     course_count = 0
 
@@ -104,17 +104,17 @@ def analyze_data(students_df):
     else:
         summary['hscVsCgpaDensity'] = []
 
-    summary['average_cgpa'] = students_df['cgpa'].mean()
+    summary['avgCgpa'] = students_df['cgpa'].mean()
     summary['median_cgpa'] = students_df['cgpa'].median()
     summary['top_performers'] = students_df.nlargest(5, 'cgpa').to_dict('records')
     summary['low_performers'] = students_df.nsmallest(5, 'cgpa').to_dict('records')
 
     low_attendance_threshold = 75
-    summary['average_attendance'] = students_df['avg_attendance'].mean()
+    summary['avg_attendance'] = students_df['avg_attendance'].mean()
     summary['low_attendance_students'] = students_df[students_df['avg_attendance'] < low_attendance_threshold].to_dict('records')
 
-    if summary['average_cgpa'] < 2.8:
-        insights.append(f"The average CGPA of {summary['average_cgpa']:.2f} is concerning.")
+    if summary['avgCgpa'] < 2.8:
+        insights.append(f"The average CGPA of {summary['avgCgpa']:.2f} is concerning.")
     if len(summary['low_performers']) > 0:
         insights.append(f"{len(summary['low_performers'])} students need immediate attention.")
     if len(summary['low_attendance_students']) > 0:
@@ -147,6 +147,11 @@ def main():
     processed_students = process_student_data(all_students)
     students_df = pd.DataFrame(processed_students)
     
+    if 'total_credits_required' not in students_df.columns:
+        students_df['total_credits_required'] = 130
+    else:
+        students_df['total_credits_required'].fillna(130, inplace=True)
+
     if 'hscGpa' in students_df.columns:
         students_df.rename(columns={'hscGpa': 'hsc_gpa'}, inplace=True)
     if 'hsc_gpa' in students_df.columns:
