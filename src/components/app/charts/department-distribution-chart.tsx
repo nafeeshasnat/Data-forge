@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Pie, PieChart, Cell, Tooltip, Legend } from "recharts";
-import type { DataSummary } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -17,13 +16,14 @@ import {
 
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
-export function DepartmentDistributionChart({ summary }: { summary: DataSummary }) {
-  const chartData = React.useMemo(() => {
-    return Object.entries(summary.departmentDistribution).map(([name, value]) => ({
-      name,
-      value,
-    }));
-  }, [summary]);
+interface DepartmentDistributionChartProps {
+    chartData: {
+        name: string;
+        value: number;
+    }[];
+}
+
+export function DepartmentDistributionChart({ chartData }: DepartmentDistributionChartProps) {
 
   const chartConfig = React.useMemo(() => {
     const config: any = {};

@@ -140,3 +140,10 @@ export function getPerformanceDistributionChartData(summary: AnalysisSummary) {
         value: performanceData[label] || 0,
     }));
 }
+
+export function getDepartmentDistributionChartData(summary: AnalysisSummary) {
+    const departmentData = summary.department_distribution || summary.departmentDistribution || {};
+    return Object.entries(departmentData)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value);
+}

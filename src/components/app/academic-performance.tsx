@@ -15,7 +15,7 @@ import { AnalysisInsights } from './analysis-insights';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
 import { SUBJECT_COUNT } from '@/lib/config';
-import { computeCreditLoadVsGradeData, getSemesterCountChartData, getCreditDistributionChartData, getPerformanceDistributionChartData } from '@/lib/chart-data-utils';
+import { computeCreditLoadVsGradeData, getSemesterCountChartData, getCreditDistributionChartData, getPerformanceDistributionChartData, getDepartmentDistributionChartData } from '@/lib/chart-data-utils';
 
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[];
@@ -93,7 +93,7 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
     return getSemesterCountChartData(students);
   }, [students, summary, isMergePage]);
 
-  const creditDistributionChartData = useMemo(() => {
+  const creditDistributionChartData = useMemo(()=> {
     if (isMergePage) {
         return summary.creditDistribution || [];
     }
@@ -101,11 +101,15 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
     }, [students, summary, isMergePage]);
 
     const performanceDistributionChartData = useMemo(() => {
-      if (isMergePage) {
-        return summary.performanceDistribution || [];
-    }  
-      return getPerformanceDistributionChartData(summary);
+        if (isMergePage) {
+            return summary.performanceDistribution || [];
+        }
+        return getPerformanceDistributionChartData(summary);
     }, [summary, isMergePage]);
+
+    const departmentDistributionChartData = useMemo(() => {
+        return getDepartmentDistributionChartData(summary);
+    }, [summary]);
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -132,7 +136,7 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
           <CardTitle>Department Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <DepartmentDistributionChart summary={summary} />
+          <DepartmentDistributionChart chartData={departmentDistributionChartData} />
         </CardContent>
       </Card>
 
