@@ -125,7 +125,8 @@ def analyze_data(students_df):
             'department_distribution': {}, 
             'cgpa_distribution': [],
             'credit_load_vs_grade': [],
-            'semester_count_distribution': []
+            'semester_count_distribution': [],
+            'credit_distribution': []
         }, []
 
     # CGPA Distribution data
@@ -210,6 +211,19 @@ def analyze_data(students_df):
         for count, num_students in semester_count_distribution.items()
     ]
 
+    # Credit Hour Distribution
+    all_semesters_for_credits = students_df.explode('semesters')
+    all_semesters_for_credits = all_semesters_for_credits[all_semesters_for_credits['semesters'].apply(lambda s: isinstance(s, dict) and pd.notna(s.get('creditLoad')))]
+    
+    if not all_semesters_for_credits.empty:
+        credit_loads = all_semesters_for_credits['semesters'].apply(lambda s: s.get('creditLoad'))
+        credit_distribution = credit_loads.astype(int).value_counts().sort_index().to_dict()
+        summary['credit_distribution'] = [
+            {'name': f'{credit} Credits', 'count': num_semesters}
+            for credit, num_semesters in credit_distribution.items()
+        ]
+    else:
+        summary['credit_distribution'] = []
 
     # General Statistics
     summary['avg_cgpa'] = students_df['cgpa'].mean()
