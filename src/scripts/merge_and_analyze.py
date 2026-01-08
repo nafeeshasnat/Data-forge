@@ -42,6 +42,12 @@ def process_student_data(students):
     """
     processed_students = []
     for student in students:
+        # Standardize pre-graduation GPA key to 'pre_grad_gpa'
+        if "hscGpa" in student and "pre_grad_gpa" not in student:
+            student["pre_grad_gpa"] = student.pop("hscGpa")
+        if "hsc_gpa" in student and "pre_grad_gpa" not in student:
+            student["pre_grad_gpa"] = student.pop("hsc_gpa")
+
         if "semesters" in student and "semesterDetails" not in student:
             student["semesterDetails"] = student.pop("semesters")
         if isinstance(student.get("semesterDetails"), dict):
@@ -72,7 +78,7 @@ def process_student_data(students):
         total_attendance = sum(s.get("attendancePercentage", 0) for s in student["semesterDetails"])
         semester_count = len(student["semesterDetails"])
 
-        student['avgAttendance'] = total_attendance / semester_count if semester_count > 0 else 0
+        student['avg_attendance'] = total_attendance / semester_count if semester_count > 0 else 0
         
         processed_students.append(student)
     return processed_students
@@ -86,39 +92,39 @@ def analyze_data(students_df):
 
     bins = [0, 2.5, 3.5, 4.0]
     labels = ['Low', 'Mid', 'High']
-    students_df['performanceGroup'] = pd.cut(students_df['cgpa'], bins=bins, labels=labels, include_lowest=True)
-    summary['performanceDistribution'] = students_df['performanceGroup'].value_counts().to_dict()
-    summary['departmentDistribution'] = students_df['department'].value_counts().to_dict()
+    students_df['performance_group'] = pd.cut(students_df['cgpa'], bins=bins, labels=labels, include_lowest=True)
+    summary['performance_distribution'] = students_df['performance_group'].value_counts().to_dict()
+    summary['department_distribution'] = students_df['department'].value_counts().to_dict()
 
-    if 'hscGpa' in students_df.columns and not students_df['hscGpa'].empty:
+    if 'pre_grad_gpa' in students_df.columns and not students_df['pre_grad_gpa'].empty:
         x_bins, y_bins = 20, 20
         x_bin_width, y_bin_width = (5.0 - 0.0) / x_bins, (4.0 - 0.0) / y_bins
-        students_df['x_bin'] = np.floor((students_df['hscGpa'] - 0.0) / x_bin_width).astype(int).clip(0, x_bins - 1)
+        students_df['x_bin'] = np.floor((students_df['pre_grad_gpa'] - 0.0) / x_bin_width).astype(int).clip(0, x_bins - 1)
         students_df['y_bin'] = np.floor((students_df['cgpa'] - 0.0) / y_bin_width).astype(int).clip(0, y_bins - 1)
         bin_counts = students_df.groupby(['x_bin', 'y_bin']).size().reset_index(name='count')
-        summary['hscVsCgpaDensity'] = [
-            {"preGpa": 0.0 + (x + 0.5) * x_bin_width, "uniCgpa": 0.0 + (y + 0.5) * y_bin_width, "count": c}
+        summary['hsc_vs_cgpa_density'] = [
+            {"pre_gpa": 0.0 + (x + 0.5) * x_bin_width, "uni_cgpa": 0.0 + (y + 0.5) * y_bin_width, "count": c}
             for x, y, c in zip(bin_counts['x_bin'], bin_counts['y_bin'], bin_counts['count'])
         ]
         students_df.drop(columns=['x_bin', 'y_bin'], inplace=True)
     else:
-        summary['hscVsCgpaDensity'] = []
+        summary['hsc_vs_cgpa_density'] = []
 
-    summary['avgCgpa'] = students_df['cgpa'].mean()
-    summary['medianCgpa'] = students_df['cgpa'].median()
-    summary['topPerformers'] = students_df.nlargest(5, 'cgpa').to_dict('records')
-    summary['lowPerformers'] = students_df.nsmallest(5, 'cgpa').to_dict('records')
+    summary['avg_cgpa'] = students_df['cgpa'].mean()
+    summary['median_cgpa'] = students_df['cgpa'].median()
+    summary['top_performers'] = students_df.nlargest(5, 'cgpa').to_dict('records')
+    summary['low_performers'] = students_df.nsmallest(5, 'cgpa').to_dict('records')
 
     low_attendance_threshold = 75
-    summary['avgAttendance'] = students_df['avgAttendance'].mean()
-    summary['lowAttendanceStudents'] = students_df[students_df['avgAttendance'] < low_attendance_threshold].to_dict('records')
+    summary['avg_attendance'] = students_df['avg_attendance'].mean()
+    summary['low_attendance_students'] = students_df[students_df['avg_attendance'] < low_attendance_threshold].to_dict('records')
 
-    if summary['avgCgpa'] < 2.8:
-        insights.append(f"The average CGPA of {summary['avgCgpa']:.2f} is concerning.")
-    if len(summary['lowPerformers']) > 0:
-        insights.append(f"{len(summary['lowPerformers'])} students need immediate attention.")
-    if len(summary['lowAttendanceStudents']) > 0:
-        insights.append(f"{len(summary['lowAttendanceStudents'])} students have low attendance.")
+    if summary['avg_cgpa'] < 2.8:
+        insights.append(f"The average CGPA of {summary['avg_cgpa']:.2f} is concerning.")
+    if len(summary['low_performers']) > 0:
+        insights.append(f"{len(summary['low_performers'])} students need immediate attention.")
+    if len(summary['low_attendance_students']) > 0:
+        insights.append(f"{len(summary['low_attendance_students'])} students have low attendance.")
     if not insights:
         insights.append("The dataset appears healthy.")
 
@@ -152,10 +158,9 @@ def main():
     else:
         students_df['totalCreditsRequired'].fillna(130, inplace=True)
 
-    if 'hscGpa' in students_df.columns:
-        students_df.rename(columns={'hscGpa': 'hscGpa'}, inplace=True)
-    if 'hscGpa' in students_df.columns:
-        students_df['hscGpa'] = pd.to_numeric(students_df['hscGpa'], errors='coerce').fillna(0)
+    # Ensure pre_grad_gpa column is numeric
+    if 'pre_grad_gpa' in students_df.columns:
+        students_df['pre_grad_gpa'] = pd.to_numeric(students_df['pre_grad_gpa'], errors='coerce').fillna(0)
     
     summary, insights = analyze_data(students_df)
 
@@ -173,7 +178,7 @@ def main():
         "summary": summary,
         "insights": insights,
         "students": json.loads(students_df.to_json(orient='records')),
-        "params": {"stdCredit": 18, "maxCreditImpact": 0.15}
+        "params": {"std_credit": 18, "max_credit_impact": 0.15}
     }
     print(json.dumps(result, indent=2))
 
