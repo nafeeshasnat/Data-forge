@@ -5,6 +5,7 @@ import type { Student, GenerationParams, AnalysisSummary, StudentWithCgpa } from
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { MergeSidebar } from '@/components/app/merge-sidebar';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 export default function MergePage() {
   const [files, setFiles] = useState<FileList | null>(null);
@@ -103,6 +104,30 @@ export default function MergePage() {
     });
   };
 
+  const handleHello = async () => {
+    try {
+      console.log('Fetching /api/hello');
+      const response = await fetch('/api/hello');
+      console.log('Response:', response);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('Data:', data);
+      toast({
+        title: "Message from backend",
+        description: data.message,
+      });
+    } catch (error) {
+      console.error("Failed to fetch message:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to fetch message",
+        description: (error as Error).message,
+      });
+    }
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <aside className="w-96 h-full overflow-y-auto border-r">
@@ -117,6 +142,7 @@ export default function MergePage() {
       <main className="flex-1 p-6 overflow-auto">
         <div className="mb-4">
             <h1 className="text-2xl font-bold">Merge and Analyze Datasets</h1>
+            <Button onClick={handleHello}>Say Hello</Button>
         </div>
         {mergedStudents.length > 0 && summary && params ? (
             <AcademicPerformance students={mergedStudents} summary={summary} params={params} insights={insights} />

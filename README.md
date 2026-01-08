@@ -1,4 +1,4 @@
-# DataForge AI
+e# DataForge AI
 
 DataForge is a powerful and intuitive application for generating and analyzing synthetic student datasets. It provides a flexible platform for creating realistic and customizable data for educational research, software testing, and data analysis purposes.
 
@@ -47,12 +47,14 @@ DataForge is a powerful and intuitive application for generating and analyzing s
     ```bash
     npm run dev
     ```
+    This will start both the front-end and back-end servers in development mode.
 
-4.  Open your browser and navigate to `http://localhost:5173` to see the application in action.
+4.  Open your browser and navigate to `http://localhost:9002` to see the application in action.
 
 ## 🛠️ Technology Stack
 
 - **Frontend:** React, Vite, TypeScript
+- **Backend:** Express.js, TypeScript
 - **UI Components:** shadcn/ui, Tailwind CSS
 - **Data Visualization:** Recharts
 - **State Management:** React Hooks & Context API
@@ -86,6 +88,8 @@ src
 │   ├── types.ts      # TypeScript type definitions
 │   └── config.ts     # Default parameters and app configuration
 └── styles/           # Global styles and Tailwind CSS setup
+server/
+├── server.ts         # Main Express.js server file
 ```
 
 ## 🤝 Contributing

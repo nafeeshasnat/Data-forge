@@ -1,14 +1,3 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+'express\';\nimport path from \'path\';\n\nconst app = express();\nconst port = 3000;\n\n// API endpoint\napp.get(\'/api/hello\', (req, res) => {\n  res.json({ message: \'Hello from the server!\' });\n});\n\n// Serve static files from the build directory\napp.use(express.static(path.join(__dirname, \'..\/dist\')));\n\n// For any other request, serve the index.html file\napp.get(\'*\', (req, res) => {\n  res.sendFile(path.join(__dirname, \'..\/dist/index.html\'));\n});\n\napp.listen(port, () => {\n  console.log(`Server listening on port ${port}`);\n});\n;
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const app = (0, express_1.default)();
-const port = 3000;
-app.get('/', (req, res) => {
-    res.send('Hello from the server!');
-});
-app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-});
