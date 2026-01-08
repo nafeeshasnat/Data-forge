@@ -105,3 +105,29 @@ export function getSemesterCountChartData(students: StudentWithCgpa[]) {
       return aNum - bNum;
     });
 }
+
+export function getCreditDistributionChartData(students: StudentWithCgpa[]) {
+    const creditCounts: Record<string, number> = {};
+
+    students.forEach(student => {
+        if (student.semesters && typeof student.semesters === 'object') {
+            Object.values(student.semesters).forEach((semester: any) => {
+                if(semester && semester.creditHours) {
+                    const credits = semester.creditHours;
+                    creditCounts[credits] = (creditCounts[credits] || 0) + 1;
+                }
+            });
+        }
+    });
+
+    return Object.entries(creditCounts)
+      .map(([creditCount, studentCount]) => ({
+        name: `${creditCount} Credits`,
+        count: studentCount,
+      }))
+      .sort((a, b) => {
+        const aNum = parseInt(a.name);
+        const bNum = parseInt(b.name);
+        return aNum - bNum;
+      });
+}
