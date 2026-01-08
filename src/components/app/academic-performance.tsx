@@ -51,7 +51,7 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
         </CardHeader>
         <CardContent>
           {isMergePage ? (
-            <HscVsCgpaDensityChart students={students} />
+            <HscVsCgpaDensityChart summary={summary} />
           ) : (
             <HscVsCgpaChart students={students} />
           )}

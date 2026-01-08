@@ -41,6 +41,26 @@ def analyze_data(students_df):
     # --- Department Distribution ---
     summary['departmentDistribution'] = students_df['department'].value_counts().to_dict()
 
+    # --- HSC vs CGPA Density ---
+    if 'hsc_gpa' in students_df.columns:
+        students_df['hsc_bin'] = pd.cut(students_df['hsc_gpa'], bins=10)
+        students_df['cgpa_bin'] = pd.cut(students_df['cgpa'], bins=10)
+        density_data = students_df.groupby(['hsc_bin', 'cgpa_bin'], observed=False).size().reset_index(name='count')
+        
+        summary['hscVsCgpaDensity'] = [
+            {
+                "hscGpa": round(hsc_bin.mid, 2),
+                "cgpa": round(cgpa_bin.mid, 2),
+                "count": count
+            }
+            for hsc_bin, cgpa_bin, count in zip(density_data['hsc_bin'], density_data['cgpa_bin'], density_data['count'])
+        ]
+        # Drop the temporary bin columns as they are not JSON serializable
+        students_df.drop(columns=['hsc_bin', 'cgpa_bin'], inplace=True)
+    else:
+        summary['hscVsCgpaDensity'] = []
+
+
     # --- Performance Analysis ---
     summary['average_cgpa'] = students_df['cgpa'].mean()
     summary['median_cgpa'] = students_df['cgpa'].median()
@@ -97,6 +117,14 @@ def main():
     processed_students = process_student_data(all_students)
     students_df = pd.DataFrame(processed_students)
     
+    # Standardize the 'hscGpa' column to 'hsc_gpa' if it exists
+    if 'hscGpa' in students_df.columns:
+        students_df.rename(columns={'hscGpa': 'hsc_gpa'}, inplace=True)
+
+    if 'hsc_gpa' in students_df.columns:
+        students_df['hsc_gpa'] = pd.to_numeric(students_df['hsc_gpa'], errors='coerce')
+        students_df.dropna(subset=['hsc_gpa'], inplace=True)
+    
     summary, insights = analyze_data(students_df)
 
     # Helper to convert numpy types for JSON serialization
@@ -120,7 +148,7 @@ def main():
     result = {
         "summary": summary,
         "insights": insights,
-        "students": processed_students,
+        "students": json.loads(students_df.to_json(orient='records')),
         "params": params
     }
     print(json.dumps(result, indent=2))
