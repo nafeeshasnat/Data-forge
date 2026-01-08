@@ -121,8 +121,8 @@ def analyze_data(students_df):
     if students_df.empty:
         return {
             'hsc_vs_cgpa_density': [], 
-            'performance_distribution': {}, 
-            'department_distribution': {}, 
+            'performance_distribution': [], 
+            'department_distribution': {},
             'cgpa_distribution': [],
             'credit_load_vs_grade': [],
             'semester_count_distribution': [],
@@ -154,7 +154,11 @@ def analyze_data(students_df):
     perf_bins = [0, 2.5, 3.5, 4.0]
     labels = ['Low', 'Mid', 'High']
     students_df['performance_group'] = pd.cut(students_df['cgpa'], bins=perf_bins, labels=labels, include_lowest=True)
-    summary['performance_distribution'] = students_df['performance_group'].value_counts().to_dict()
+    performance_dist_series = students_df['performance_group'].value_counts()
+    summary['performance_distribution'] = [
+        {'name': index, 'value': value}
+        for index, value in performance_dist_series.items()
+    ]
     summary['department_distribution'] = students_df['department'].value_counts().to_dict()
 
     # HSC vs CGPA Density (only if pre_grad_gpa data exists)

@@ -101,8 +101,11 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
     }, [students, summary, isMergePage]);
 
     const performanceDistributionChartData = useMemo(() => {
-        return getPerformanceDistributionChartData(summary);
-    }, [summary]);
+      if (isMergePage) {
+        return summary.performanceDistribution || [];
+    }  
+      return getPerformanceDistributionChartData(summary);
+    }, [summary, isMergePage]);
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
