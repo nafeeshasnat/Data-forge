@@ -31,13 +31,19 @@ export function AttendanceVsGradeChart({ students }: AttendanceVsGradeChartProps
     const attendanceBins = new Map<number, { totalGpa: number; count: number }>();
 
     students.forEach(student => {
-      const attendanceBin = Math.round(student.avgAttendance / 1) * 1;
-      if (!attendanceBins.has(attendanceBin)) {
-        attendanceBins.set(attendanceBin, { totalGpa: 0, count: 0 });
+      if (student.semesters && Array.isArray(student.semesters)) {
+        student.semesters.forEach(semester => {
+          if (semester && semester.attendancePercentage != null && semester.gpa != null) {
+            const attendanceBin = Math.round(semester.attendancePercentage / 5) * 5; // Bin by 5%
+            if (!attendanceBins.has(attendanceBin)) {
+              attendanceBins.set(attendanceBin, { totalGpa: 0, count: 0 });
+            }
+            const bin = attendanceBins.get(attendanceBin)!;
+            bin.totalGpa += semester.gpa;
+            bin.count++;
+          }
+        });
       }
-      const bin = attendanceBins.get(attendanceBin)!;
-      bin.totalGpa += student.cgpa;
-      bin.count++;
     });
 
     return Array.from(attendanceBins.entries()).map(([attendance, { totalGpa, count }]) => ({

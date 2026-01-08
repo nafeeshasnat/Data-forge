@@ -13,10 +13,11 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import type { StudentWithSemesterDetails } from '@/lib/types';
+import type { StudentWithCgpa, GenerationParams } from '@/lib/types';
 
 interface CreditLoadVsGradeChartProps {
-  students: StudentWithSemesterDetails[];
+  students: StudentWithCgpa[];
+  params: GenerationParams | null;
 }
 
 const chartConfig = {
@@ -26,19 +27,14 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function CreditLoadVsGradeChart({ students }: CreditLoadVsGradeChartProps) {
+export function CreditLoadVsGradeChart({ students, params }: CreditLoadVsGradeChartProps) {
   const data = useMemo(() => {
     if (!students) return [];
     const creditBins = new Map<number, { totalGpa: number; count: number }>();
 
     students.forEach(student => {
-      if (student.semesterDetails) {
-        const semesters = Array.isArray(student.semesterDetails)
-          ? student.semesterDetails
-          : Object.values(student.semesterDetails);
-
-        semesters.forEach(semester => {
-            // This condition now correctly handles cases where creditLoad or gpa is 0.
+      if (student.semesters && Array.isArray(student.semesters)) {
+        student.semesters.forEach(semester => {
             if (semester && semester.creditLoad != null && semester.gpa != null) {
                 const creditBin = Math.round(semester.creditLoad / 3) * 3;
                 if (!creditBins.has(creditBin)) {

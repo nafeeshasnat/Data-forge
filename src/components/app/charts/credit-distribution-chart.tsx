@@ -20,10 +20,8 @@ export function CreditDistributionChart({ students }: { students: StudentWithCgp
     const creditCounts: Record<string, number> = {};
 
     students.forEach(student => {
-        const details = (student as any).semesterDetails;
-        if (details) {
-            const semesters = Array.isArray(details) ? details : Object.values(details);
-            semesters.forEach(semester => {
+        if (student.semesters && Array.isArray(student.semesters)) {
+            student.semesters.forEach(semester => {
                 if(semester && semester.creditLoad) {
                     const credits = semester.creditLoad;
                     creditCounts[credits] = (creditCounts[credits] || 0) + 1;

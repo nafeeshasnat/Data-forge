@@ -41,7 +41,6 @@ def calculate_semester_gpa(semester_data):
 
 def process_student_data(students):
     """Processes raw student data to standardize fields and calculate aggregates."""
-    processed_students = []
     for student in students:
         # --- Standardize Pre-Graduation GPA ---
         pre_grad_gpa_keys = ['pre_grad_gpa', 'hscGpa', 'hsc_gpa', 'preGradGpa']
@@ -55,24 +54,26 @@ def process_student_data(students):
                     continue
         student['pre_grad_gpa'] = gpa_val
 
-        # --- Standardize Semester Structure ---
-        if "semesters" in student and "semesterDetails" not in student:
-            student["semesterDetails"] = student.pop("semesters")
-        if isinstance(student.get("semesterDetails"), dict):
-            student["semesterDetails"] = list(student["semesterDetails"].values())
-        if not isinstance(student.get("semesterDetails"), list):
-            student["semesterDetails"] = []
+        # --- Standardize Semester Structure (dict to list) ---
+        semesters_list = []
+        if "semesters" in student:
+             semesters_list = list(student["semesters"].values())
+        elif "semesterDetails" in student and isinstance(student.get("semesterDetails"), list):
+             semesters_list = student["semesterDetails"]
+        
+        student["semesters"] = semesters_list # Replace original with list
+        if "semesterDetails" in student: # Clean up old key
+            del student["semesterDetails"]
 
-        # --- Process Each Semester ---
-        processed_semesters = []
-        for semester in student.get("semesterDetails", []):
+        # --- Process Each Semester (in-place) ---
+        for semester in student.get("semesters", []):
             if not isinstance(semester, dict):
                 continue
 
-            # Calculate GPA from grades, defaulting to NaN if not possible
+            # Calculate GPA and append to the semester object
             semester["gpa"] = calculate_semester_gpa(semester)
 
-            # Standardize credit load, defaulting to NaN
+            # Standardize credit load and append
             credit_keys = ['creditLoad', 'creditHours', 'credits']
             credit_val = np.nan
             search_loc = semester.get("details", semester)
@@ -85,7 +86,7 @@ def process_student_data(students):
                         continue
             semester["creditLoad"] = credit_val
 
-            # Standardize attendance, defaulting to NaN
+            # Standardize attendance and append
             attendance_keys = ['attendancePercentage', 'attendance', 'attendance_percentage']
             attendance_val = np.nan
             for key in attendance_keys:
@@ -97,20 +98,15 @@ def process_student_data(students):
                         continue
             semester['attendancePercentage'] = attendance_val
 
-            processed_semesters.append(semester)
-
-        student["semesterDetails"] = processed_semesters
-
         # --- Calculate Student-Level Aggregates ---
-        valid_attendances = [s['attendancePercentage'] for s in student["semesterDetails"] if pd.notna(s.get('attendancePercentage'))]
+        valid_attendances = [s['attendancePercentage'] for s in student["semesters"] if pd.notna(s.get('attendancePercentage'))]
         student['avg_attendance'] = np.mean(valid_attendances) if valid_attendances else np.nan
         
         # Standardize CGPA
         if 'cgpa' not in student or not isinstance(student['cgpa'], (int, float)):
             student['cgpa'] = np.nan
 
-        processed_students.append(student)
-    return processed_students
+    return students
 
 def analyze_data(students_df):
     """Performs an in-depth analysis of the processed student dataset."""
@@ -165,11 +161,11 @@ def analyze_data(students_df):
 
     # Insights
     insights = []
-    if summary['avg_cgpa'] < 2.8:
+    if not pd.isna(summary.get('avg_cgpa')) and summary['avg_cgpa'] < 2.8:
         insights.append(f"The average CGPA of {summary['avg_cgpa']:.2f} is concerning.")
-    if len(summary['low_performers']) > 0:
+    if len(summary.get('low_performers', [])) > 0:
         insights.append(f"{len(summary['low_performers'])} students may need academic support.")
-    if len(summary['low_attendance_students']) > 0:
+    if len(summary.get('low_attendance_students', [])) > 0:
         insights.append(f"{len(summary['low_attendance_students'])} students have low attendance, which may affect their performance.")
     if not insights:
         insights.append("The dataset appears healthy overall.")
