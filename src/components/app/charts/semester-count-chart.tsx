@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Bar, BarChart, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import type { StudentWithCgpa } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -15,27 +14,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-export function SemesterCountChart({ students }: { students: StudentWithCgpa[] }) {
-  const chartData = React.useMemo(() => {
-    const semesterCounts: Record<string, number> = {};
-
-    students.forEach(student => {
-      const count = student.semesters ? Object.keys(student.semesters).length : 0;
-      semesterCounts[count] = (semesterCounts[count] || 0) + 1;
-    });
-
-    return Object.entries(semesterCounts)
-      .map(([semesterCount, studentCount]) => ({
-        name: `${semesterCount} Semesters`,
-        count: studentCount,
-      }))
-      .sort((a, b) => {
-        const aNum = parseInt(a.name);
-        const bNum = parseInt(b.name);
-        return aNum - bNum;
-      });
-  }, [students]);
-
+export function SemesterCountChart({ chartData }: { chartData: any[] }) {
   const chartConfig = {
     count: {
       label: "Students",

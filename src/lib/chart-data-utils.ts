@@ -85,3 +85,23 @@ export function computeCreditLoadVsGradeData(students: StudentWithCgpa[]): Credi
       avgGpa: totalGpa / count,
     })).sort((a, b) => a.creditLoad - b.creditLoad);
 }
+
+export function getSemesterCountChartData(students: StudentWithCgpa[]) {
+  const semesterCounts: Record<string, number> = {};
+
+  students.forEach(student => {
+    const count = student.semesters ? Object.keys(student.semesters).length : 0;
+    semesterCounts[count] = (semesterCounts[count] || 0) + 1;
+  });
+
+  return Object.entries(semesterCounts)
+    .map(([semesterCount, studentCount]) => ({
+      name: `${semesterCount} Semesters`,
+      count: studentCount,
+    }))
+    .sort((a, b) => {
+      const aNum = parseInt(a.name);
+      const bNum = parseInt(b.name);
+      return aNum - bNum;
+    });
+}

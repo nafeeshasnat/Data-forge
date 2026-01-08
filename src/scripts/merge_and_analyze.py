@@ -125,6 +125,7 @@ def analyze_data(students_df):
             'department_distribution': {}, 
             'cgpa_distribution': [],
             'credit_load_vs_grade': [],
+            'semester_count_distribution': []
         }, []
 
     # CGPA Distribution data
@@ -199,6 +200,15 @@ def analyze_data(students_df):
         ], key=lambda x: x['creditLoad'])
     else:
         summary['credit_load_vs_grade'] = []
+    
+    # Semester Count Distribution
+    semester_counts = students_df['semesters'].apply(lambda s: len(s) if isinstance(s, list) else 0)
+    semester_count_distribution = semester_counts.value_counts().sort_index().to_dict()
+
+    summary['semester_count_distribution'] = [
+        {'name': f'{count} Semesters', 'count': num_students}
+        for count, num_students in semester_count_distribution.items()
+    ]
 
 
     # General Statistics

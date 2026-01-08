@@ -15,7 +15,7 @@ import { AnalysisInsights } from './analysis-insights';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
 import { SUBJECT_COUNT } from '@/lib/config';
-import { computeCreditLoadVsGradeData } from '@/lib/chart-data-utils';
+import { computeCreditLoadVsGradeData, getSemesterCountChartData } from '@/lib/chart-data-utils';
 
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[];
@@ -84,6 +84,13 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
         return summary.creditLoadVsGrade || [];
     }
     return computeCreditLoadVsGradeData(students);
+  }, [students, summary, isMergePage]);
+
+  const semesterCountChartData = useMemo(() => {
+    if (isMergePage) {
+        return summary.semesterCountDistribution || [];
+    }
+    return getSemesterCountChartData(students);
   }, [students, summary, isMergePage]);
 
   return (
@@ -160,7 +167,7 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
           <CardTitle>Semester Count</CardTitle>
         </CardHeader>
         <CardContent>
-          <SemesterCountChart students={students} />
+          <SemesterCountChart chartData={semesterCountChartData} />
         </CardContent>
       </Card>
 
