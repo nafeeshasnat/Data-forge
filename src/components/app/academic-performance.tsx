@@ -29,7 +29,15 @@ function StatsGrid({ summary, students }: { summary: AnalysisSummary, students: 
     const avgAttendance = summary.average_attendance ? `${summary.average_attendance.toFixed(2)}%` : 'N/A';
 
     return (
-        <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-4">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                    <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{summary.totalStudents}</div>
+                </CardContent>
+            </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                     <CardTitle className="text-sm font-medium">Total Credits</CardTitle>
