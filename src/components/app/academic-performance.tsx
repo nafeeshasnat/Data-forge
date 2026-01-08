@@ -15,7 +15,7 @@ import { AnalysisInsights } from './analysis-insights';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
 import { SUBJECT_COUNT } from '@/lib/config';
-import { computeCreditLoadVsGradeData, getSemesterCountChartData, getCreditDistributionChartData } from '@/lib/chart-data-utils';
+import { computeCreditLoadVsGradeData, getSemesterCountChartData, getCreditDistributionChartData, getPerformanceDistributionChartData } from '@/lib/chart-data-utils';
 
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[];
@@ -100,6 +100,10 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
     return getCreditDistributionChartData(students);
     }, [students, summary, isMergePage]);
 
+    const performanceDistributionChartData = useMemo(() => {
+        return getPerformanceDistributionChartData(summary);
+    }, [summary]);
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
@@ -147,7 +151,7 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
           <CardTitle>Performance Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <PerformanceDistributionChart summary={summary} />
+          <PerformanceDistributionChart chartData={performanceDistributionChartData} />
         </CardContent>
       </Card>
 

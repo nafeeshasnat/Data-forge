@@ -1,5 +1,5 @@
 
-import type { StudentWithCgpa, Semester, CreditLoadVsGradeData } from "@/lib/types";
+import type { StudentWithCgpa, Semester, CreditLoadVsGradeData, AnalysisSummary } from "@/lib/types";
 
 export function getCgpaDistributionData(students: StudentWithCgpa[]) {
   if (!students || students.length === 0) {
@@ -130,4 +130,13 @@ export function getCreditDistributionChartData(students: StudentWithCgpa[]) {
         const bNum = parseInt(b.name);
         return aNum - bNum;
       });
+}
+
+export function getPerformanceDistributionChartData(summary: AnalysisSummary) {
+    const performanceLabels = ['High', 'Mid', 'Low'];
+    const performanceData = summary.performance_distribution || summary.performanceDistribution || {};
+    return performanceLabels.map(label => ({
+        name: label,
+        value: performanceData[label] || 0,
+    }));
 }

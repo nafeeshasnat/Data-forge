@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Pie, PieChart, Cell, Tooltip, Legend } from "recharts";
-import type { AnalysisSummary } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -21,15 +20,14 @@ const COLORS = {
     Low: "hsl(var(--destructive))",
 }
 
-export function PerformanceDistributionChart({ summary }: { summary: AnalysisSummary }) {
-  const chartData = React.useMemo(() => {
-    if (!summary || !summary.performanceDistribution) return [];
-    return Object.entries(summary.performanceDistribution).map(([name, value]) => ({
-      name,
-      value,
-    })).sort((a,b) => a.name.localeCompare(b.name));
-  }, [summary]);
+interface PerformanceDistributionChartProps {
+    chartData: {
+        name: string;
+        value: number;
+    }[];
+}
 
+export function PerformanceDistributionChart({ chartData }: PerformanceDistributionChartProps) {
  const chartConfig = React.useMemo(() => {
     const config: any = {};
     chartData.forEach((item) => {
