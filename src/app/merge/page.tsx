@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import type { Student, GenerationParams, AnalysisSummary, StudentWithCgpa } from '@/lib/types';
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { MergeSidebar } from '@/components/app/merge-sidebar';
@@ -15,6 +16,7 @@ export default function MergePage() {
   const [insights, setInsights] = useState<string[]>([]);
   const [params, setParams] = useState<GenerationParams | null>(null);
   const [plainText, setPlainText] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,6 +33,7 @@ export default function MergePage() {
       return;
     }
 
+    setIsLoading(true);
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
@@ -49,11 +52,11 @@ export default function MergePage() {
       }
 
       const result = await response.json();
-
-      setParams(result.params);
-      setSummary(result.summary);
-      setMergedStudents(result.students);
-      setInsights(result.insights);
+      
+      setParams(result.params || null);
+      setSummary(result.summary || null);
+      setMergedStudents(result.students || []);
+      setInsights(result.insights || []);
       setPlainText(''); // Clear plain text view
 
       toast({
@@ -67,13 +70,13 @@ export default function MergePage() {
             title: "Merge Failed",
             description: (error as Error).message,
         });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleJsonToText = async (file: File) => {
-    console.log("handleJsonToText started");
     if (!file) {
-      console.log("No file selected, aborting.");
       toast({
         variant: "destructive",
         title: "No file selected",
@@ -81,27 +84,23 @@ export default function MergePage() {
       });
       return;
     }
-
-    console.log(`File selected: ${file.name}, size: ${file.size}`);
+    
+    setIsLoading(true);
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      console.log("Sending request to /api/json-to-text");
       const response = await fetch('/api/json-to-text', {
         method: 'POST',
         body: formData,
       });
 
-      console.log(`Received response with status: ${response.status}`);
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`JSON to text conversion failed with status: ${response.status}, message: ${errorText}`);
         throw new Error(`Failed to convert file: ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.text();
-      console.log("Successfully received text result:", result);
       setPlainText(result);
       setMergedStudents([]); // Clear merge view
       setSummary(null);
@@ -119,8 +118,9 @@ export default function MergePage() {
         title: "Conversion Failed",
         description: (error as Error).message,
       });
+    } finally {
+        setIsLoading(false);
     }
-    console.log("handleJsonToText finished");
   };
 
   const handleDownload = () => {
@@ -172,14 +172,19 @@ export default function MergePage() {
             onFileChange={handleFileChange}
             onJsonToText={handleJsonToText}
             onTrim={handleTrim}
-            mergedStudentsCount={mergedStudents.length} 
+            mergedStudentsCount={mergedStudents ? mergedStudents.length : 0} 
+            isLoading={isLoading}
         />
       </aside>
       <main className="flex-1 p-6 overflow-auto">
         <div className="mb-4">
             <h1 className="text-2xl font-bold">Merge and Analyze Datasets</h1>
         </div>
-        {plainText ? (
+        {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+        ) : plainText ? (
           <Card>
             <CardHeader>
               <CardTitle>JSON as Plain Text</CardTitle>
@@ -188,7 +193,7 @@ export default function MergePage() {
               <Textarea value={plainText} readOnly rows={20} className="w-full p-2 font-mono" />
             </CardContent>
           </Card>
-        ) : mergedStudents.length > 0 && summary && params ? (
+        ) : (mergedStudents && mergedStudents.length > 0 && summary) ? (
             <AcademicPerformance students={mergedStudents} summary={summary} params={params} insights={insights} isMergePage={true} />
         ) : (
             <div className="flex items-center justify-center h-full text-center p-8 border rounded-lg bg-card">

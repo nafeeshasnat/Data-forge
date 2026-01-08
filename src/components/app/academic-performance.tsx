@@ -16,7 +16,7 @@ import { AnalysisInsights } from './analysis-insights';
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[];
   summary: AnalysisSummary;
-  params: GenerationParams;
+  params: GenerationParams | null; // Allow params to be null
   insights: string[];
   isMergePage?: boolean;
 }

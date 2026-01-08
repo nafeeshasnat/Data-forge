@@ -1,46 +1,45 @@
+
 import json
 import sys
-import os
+
+def format_student_data(data):
+    """
+    Formats the student data into a readable plain text format.
+    """
+    output = []
+    if 'students' in data:
+        for student in data['students']:
+            output.append(f"Student ID: {student.get('student_id', 'N/A')}")
+            output.append(f"  CGPA: {student.get('cgpa', 'N/A')}")
+            output.append(f"  Department: {student.get('department', 'N/A')}")
+            output.append("  Semesters:")
+            semesters = student.get('semesters', {})
+            if isinstance(semesters, dict):
+                for sem, details in semesters.items():
+                    output.append(f"    Semester {sem}:")
+                    output.append(f"      Credits: {details.get('creditHours', 'N/A')}")
+                    output.append(f"      Attendance: {details.get('attendancePercentage', 'N/A')}%")
+            output.append("\n")
+    return "\n".join(output)
 
 def main():
-    print(f"[Debug] Script started. CWD: {os.getcwd()}", file=sys.stderr)
-    print(f"[Debug] Received arguments: {sys.argv}", file=sys.stderr)
-
-    if len(sys.argv) < 2:
+    if len(sys.argv) != 2:
         print("Usage: python json_to_text.py <file_path>", file=sys.stderr)
         sys.exit(1)
 
     file_path = sys.argv[1]
-    print(f"[Debug] Processing file: {file_path}", file=sys.stderr)
-
-    if not os.path.exists(file_path):
-        print(f"[Debug] File does not exist at path: {file_path}", file=sys.stderr)
-        sys.exit(1)
-
     try:
         with open(file_path, 'r') as f:
             data = json.load(f)
         
-        text_output = ""
-        if isinstance(data, dict):
-            for key, value in data.items():
-                text_output += f"{key}: {json.dumps(value, indent=2)}\n"
-        elif isinstance(data, list):
-            for index, item in enumerate(data):
-                 text_output += f"Item {index}: {json.dumps(item, indent=2)}\n"
-        else:
-            text_output = json.dumps(data, indent=2)
+        formatted_text = format_student_data(data)
+        print(formatted_text)
 
-        print(text_output)
-
-    except json.JSONDecodeError:
-        print(f"Error: Invalid JSON file at {file_path}", file=sys.stderr)
-        sys.exit(1)
     except FileNotFoundError:
         print(f"Error: File not found at {file_path}", file=sys.stderr)
         sys.exit(1)
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}", file=sys.stderr)
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from {file_path}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
