@@ -1,23 +1,12 @@
 'use client';
 
-import { useMemo } from 'react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Label,
-  LabelList,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Label, LabelList } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import type { StudentWithCgpa, GenerationParams, Semester } from '@/lib/types';
+import type { CreditLoadVsGradeData } from '@/lib/types';
 
 interface CreditLoadVsGradeChartProps {
-  students: StudentWithCgpa[];
-  params: GenerationParams | null;
+  data: CreditLoadVsGradeData[];
 }
 
 const chartConfig = {
@@ -27,54 +16,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-const GRADE_SCALE: Record<string, number> = {
-    "A+": 4.00, "A": 3.75, "A-": 3.50,
-    "B+": 3.25, "B": 3.00, "B-": 2.75,
-    "C+": 2.50, "C": 2.25,
-    "D": 2.00, "F": 0.00
-};
-
-const calculateGpaFromGrades = (semester: Omit<Semester, 'creditHours' | 'attendancePercentage'>): number => {
-    let totalPoints = 0;
-    let subjectCount = 0;
-    for (const key in semester) {
-        const grade = semester[key as keyof typeof semester];
-        if (typeof grade === 'string' && GRADE_SCALE[grade] !== undefined) {
-            totalPoints += GRADE_SCALE[grade];
-            subjectCount++;
-        }
-    }
-    return subjectCount > 0 ? totalPoints / subjectCount : 0;
-};
-
-export function CreditLoadVsGradeChart({ students, params }: CreditLoadVsGradeChartProps) {
-  const data = useMemo(() => {
-    if (!students) return [];
-    const creditBins = new Map<number, { totalGpa: number; count: number }>();
-
-    students.forEach(student => {
-      if (student.semesters && typeof student.semesters === 'object') {
-        Object.values(student.semesters).forEach((semester: any) => {
-            const gpa = calculateGpaFromGrades(semester);
-            if (semester && semester.creditHours != null && gpa != null) {
-                const creditBin = Math.round(semester.creditHours / 3) * 3;
-                if (!creditBins.has(creditBin)) {
-                    creditBins.set(creditBin, { totalGpa: 0, count: 0 });
-                }
-                const bin = creditBins.get(creditBin)!;
-                bin.totalGpa += gpa;
-                bin.count++;
-            }
-        });
-      }
-    });
-
-    return Array.from(creditBins.entries()).map(([creditLoad, { totalGpa, count }]) => ({
-      creditLoad,
-      avgGpa: totalGpa / count,
-    })).sort((a, b) => a.creditLoad - b.creditLoad);
-  }, [students]);
-
+export function CreditLoadVsGradeChart({ data }: CreditLoadVsGradeChartProps) {
   return (
     <Card>
       <CardHeader>

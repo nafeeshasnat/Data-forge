@@ -123,7 +123,8 @@ def analyze_data(students_df):
             'hsc_vs_cgpa_density': [], 
             'performance_distribution': {}, 
             'department_distribution': {}, 
-            'cgpa_distribution': []
+            'cgpa_distribution': [],
+            'credit_load_vs_grade': [],
         }, []
 
     # CGPA Distribution data
@@ -168,14 +169,37 @@ def analyze_data(students_df):
         bin_counts = density_df.groupby(['x_bin', 'y_bin']).size().reset_index(name='count')
         summary['hsc_vs_cgpa_density'] = [
             {
-                "pre_gpa": density_df['pre_grad_gpa'].min() + (x + 0.5) * x_bin_width,
-                "uni_cgpa": density_df['cgpa'].min() + (y + 0.5) * y_bin_width,
-                "count": c
+                "preGpa": density_df['pre_grad_gpa'].min() + (x + 0.5) * x_bin_width,
+                "uniCgpa": density_df['cgpa'].min() + (y + 0.5) * y_bin_width,
+                "count": c,
+                "z": np.sqrt(c)
             }
             for x, y, c in zip(bin_counts['x_bin'], bin_counts['y_bin'], bin_counts['count'])
         ]
     else:
         summary['hsc_vs_cgpa_density'] = []
+
+    # Credit Load vs. Grade Analysis
+    all_semesters = students_df.explode('semesters')
+    all_semesters = all_semesters[all_semesters['semesters'].apply(lambda s: isinstance(s, dict) and pd.notna(s.get('creditLoad')) and pd.notna(s.get('gpa')))]
+
+    if not all_semesters.empty:
+        credit_bins = {}
+        for _, row in all_semesters.iterrows():
+            semester = row['semesters']
+            credit_bin = int(round(semester['creditLoad'] / 3) * 3)
+            if credit_bin not in credit_bins:
+                credit_bins[credit_bin] = {'total_gpa': 0, 'count': 0}
+            credit_bins[credit_bin]['total_gpa'] += semester['gpa']
+            credit_bins[credit_bin]['count'] += 1
+        
+        summary['credit_load_vs_grade'] = sorted([
+            {"creditLoad": k, "avgGpa": v['total_gpa'] / v['count']}
+            for k, v in credit_bins.items()
+        ], key=lambda x: x['creditLoad'])
+    else:
+        summary['credit_load_vs_grade'] = []
+
 
     # General Statistics
     summary['avg_cgpa'] = students_df['cgpa'].mean()

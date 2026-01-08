@@ -1,6 +1,6 @@
 'use client';
-
-import type { StudentWithCgpa, AnalysisSummary, GenerationParams } from '@/lib/types';
+import { useMemo } from 'react';
+import type { StudentWithCgpa, AnalysisSummary, GenerationParams, CreditLoadVsGradeData } from '@/lib/types';
 import { CgpaDistributionChart } from './charts/cgpa-distribution-chart';
 import { DepartmentDistributionChart } from './charts/department-distribution-chart';
 import { HscVsCgpaChart } from './charts/hsc-vs-cgpa-chart';
@@ -15,6 +15,7 @@ import { AnalysisInsights } from './analysis-insights';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
 import { SUBJECT_COUNT } from '@/lib/config';
+import { computeCreditLoadVsGradeData } from '@/lib/chart-data-utils';
 
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[];
@@ -78,6 +79,13 @@ function StatsGrid({ summary, params }: { summary: AnalysisSummary, params: Gene
 }
 
 export function AcademicPerformance({ students, summary, params, insights, isMergePage = false }: AcademicPerformanceProps) {
+  const creditLoadVsGradeData: CreditLoadVsGradeData[] = useMemo(() => {
+    if (isMergePage) {
+        return summary.creditLoadVsGrade || [];
+    }
+    return computeCreditLoadVsGradeData(students);
+  }, [students, summary, isMergePage]);
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
@@ -113,7 +121,7 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
         </CardHeader>
         <CardContent>
           {isMergePage ? (
-            <HscVsCgpaDensityChart summary={summary} />
+            <HscVsCgpaDensityChart data={summary.hscVsCgpaDensity} />
           ) : (
             <HscVsCgpaChart students={students} />
           )}
@@ -134,7 +142,7 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
           <CardTitle>Credit Load vs Grade</CardTitle>
         </CardHeader>
         <CardContent>
-          <CreditLoadVsGradeChart students={students} params={params} />
+          <CreditLoadVsGradeChart data={creditLoadVsGradeData} />
         </CardContent>
       </Card>
 

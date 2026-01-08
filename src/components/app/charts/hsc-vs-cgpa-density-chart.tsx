@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid, Label, ResponsiveContainer, ZAxis } from 'recharts';
-import type { AnalysisSummary } from '@/lib/types';
+import type { HscVsCgpaDensityData } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -23,16 +23,7 @@ const chartConfig = {
   },
 };
 
-export function HscVsCgpaDensityChart({ summary }: { summary: AnalysisSummary }) {
-  const chartData = React.useMemo(() => {
-    if (!summary || !summary.hscVsCgpaDensity) return [];
-    // Optional: Compute a derived size value for visualization (e.g., sqrt or log)
-    return summary.hscVsCgpaDensity.map(item => ({
-      ...item,
-      z: Math.sqrt(item.count) // Using sqrt for bubble size
-    }));
-  }, [summary]);
-
+export function HscVsCgpaDensityChart({ data }: { data: HscVsCgpaDensityData[] }) {
   return (
     <Card>
       <CardHeader>
@@ -73,7 +64,7 @@ export function HscVsCgpaDensityChart({ summary }: { summary: AnalysisSummary })
                 />
               }
             />
-            <Scatter name="Student Density" data={chartData} fill="var(--color-students)" />
+            <Scatter name="Student Density" data={data} fill="var(--color-students)" />
           </ScatterChart>
         </ChartContainer>
       </CardContent>

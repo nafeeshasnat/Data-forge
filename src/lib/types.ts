@@ -1,63 +1,60 @@
-export type Grade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+' | 'C' | 'D' | 'F';
-export type PerformanceGroup = 'High' | 'Mid' | 'Low';
-
-export interface Semester {
-    [subject: string]: Grade | number;
-    creditHours: number;
-    attendancePercentage: number;
-}
-
 export interface Student {
-    id: string;
-    department: string;
-    hscGpa: number;
-    semesters: Record<string, Semester>; // e.g., { '1-1': { CSE101: 'A+', ... } }
+  id: string;
+  name: string;
+  department: string;
+  cgpa?: number;
+  pre_grad_gpa?: number;
+  semesters?: Record<string, any> | any[];
+  semesterDetails?: any[]; 
+  avg_attendance?: number;
 }
 
 export interface StudentWithCgpa extends Student {
-    cgpa: number;
-    performanceGroup: PerformanceGroup;
-    avgCreditLoad: number;
-    avgAttendance: number;
+  cgpa: number;
 }
 
-export interface SemesterDetail {
-    gpa: number;
-    creditLoad: number;
-}
-
-export interface StudentWithSemesterDetails extends StudentWithCgpa {
-    semesterDetails: SemesterDetail[];
+export interface Semester {
+  semesterName: string;
+  creditHours: number;
+  attendancePercentage: number;
+  gpa: number;
+  [key: string]: any; 
 }
 
 export interface GenerationParams {
-    totalStudents: number;
-    departmentDistribution: Record<string, number>; // e.g., { CSE: 0.6, EEE: 0.4 }
-    hscGpaRange: [number, number];
-    semestersPerStudent: [number, number];
-    subjectsPerSemester: [number, number];
-    creditsPerSubject: number;
-    attendanceRange: [number, number];
-    gpaFactors: {
-        hscGpaInfluence: number;
-        attendanceInfluence: number;
-        creditLoadInfluence: number;
-    };
+  stdCredit: number;
+  maxCreditImpact: number;
+  creditsPerSubject?: number;
+}
+
+export interface CgpaDistributionData {
+  cgpa: number;
+  students: number;
+}
+
+export interface HscVsCgpaDensityData {
+  preGpa: number;
+  uniCgpa: number;
+  count: number;
+  z: number;
+}
+
+export interface CreditLoadVsGradeData {
+  creditLoad: number;
+  avgGpa: number;
 }
 
 export interface AnalysisSummary {
-    totalStudents: number;
-    avgHscGpa: number;
-    avgCgpa: number;
-    departmentDistribution: Record<string, number>;
-    performanceDistribution: Record<string, number>;
-    avgCreditLoad?: number;
-    avgAttendance?: number;
-}
-
-export interface ChartProps {
-    students: StudentWithCgpa[];
-    params?: GenerationParams | null; 
-    summary?: AnalysisSummary | null;
-    insights?: string[] | null;
+  totalStudents: number;
+  avgCgpa?: number;
+  medianCgpa?: number;
+  cgpaDistribution: CgpaDistributionData[];
+  departmentDistribution: Record<string, number>;
+  performance_distribution: Record<string, number>; 
+  hscVsCgpaDensity: HscVsCgpaDensityData[];
+  creditLoadVsGrade: CreditLoadVsGradeData[];
+  topPerformers?: Student[];
+  lowPerformers?: Student[];
+  avgAttendance?: number;
+  lowAttendanceStudents?: Student[];
 }
