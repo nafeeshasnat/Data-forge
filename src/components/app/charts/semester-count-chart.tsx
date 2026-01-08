@@ -20,7 +20,8 @@ export function SemesterCountChart({ students }: { students: StudentWithCgpa[] }
     const semesterCounts: Record<string, number> = {};
 
     students.forEach(student => {
-      const count = Object.keys(student.semesters).length;
+      const details = (student as any).semesterDetails;
+      const count = details && Array.isArray(details) ? details.length : 0;
       semesterCounts[count] = (semesterCounts[count] || 0) + 1;
     });
 

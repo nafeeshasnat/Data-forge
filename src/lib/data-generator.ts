@@ -4,7 +4,7 @@ import { DEPARTMENTS, SUBJECTS } from './subjects';
 function generateSubjectPool(department: string): string[] {
     const baseSubjects = SUBJECTS[department];
     const subjectPool: string[] = [];
-    const totalSubjects = 50;
+    const totalSubjects = 60;
     for (let i = 0; i < totalSubjects; i++) {
         subjectPool.push(`${baseSubjects[i % baseSubjects.length]}`);
     }
@@ -82,6 +82,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
   const currentYear = new Date().getFullYear();
   const maxBirthYear = currentYear - 18;
   const minBirthYear = maxBirthYear - 7;
+  const totalCreditsRequired = 60 * params.creditsPerSubject;
 
   for (let sid = 1; sid <= params.numStudents; sid++) {
     const performanceGroup = selectPerformanceGroup(params);
@@ -94,7 +95,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     const isPerfectScorer = performanceGroup === 'High' && preGradUniGpa > 3.8 && Math.random() < 0.8;
 
     const fullSubjectPool = generateSubjectPool(department);
-    const studentSubjectPool = shuffle([...fullSubjectPool]).slice(0, 50);
+    const studentSubjectPool = shuffle([...fullSubjectPool]).slice(0, 60);
 
     const semesters: Record<string, Semester> = {};
     let semesterId = 1;
@@ -167,7 +168,8 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
       gender: choice(['male', 'female']),
       birth_year: randint(minBirthYear, maxBirthYear),
       department: department,
-      semesters: semesters
+      semesters: semesters,
+      total_credits_required: totalCreditsRequired,
     });
   }
 

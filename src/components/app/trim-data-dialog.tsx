@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { ThreeValueSlider } from "@/components/ui/three-value-slider";
 
 interface TrimDataDialogProps {
   onTrim: (minCgpa: number, maxCgpa: number, percentage: number) => void;
@@ -35,7 +36,7 @@ export const TrimDataDialog: React.FC<TrimDataDialogProps> = ({ onTrim, disabled
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label>CGPA Range: {cgpaRange[0].toFixed(2)} - {cgpaRange[1].toFixed(2)}</Label>
-            <Slider min={0} max={4} step={0.1} value={cgpaRange} onValueChange={setCgpaRange} />
+            <ThreeValueSlider min={0} max={4} step={0.1} value={cgpaRange} onValueChange={setCgpaRange} />
           </div>
           <div className="space-y-2">
             <Label>Percentage to Remove: {percentage}%</Label>

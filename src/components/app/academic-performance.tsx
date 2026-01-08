@@ -12,18 +12,68 @@ import { SemesterCountChart } from './charts/semester-count-chart';
 import { CreditDistributionChart } from './charts/credit-distribution-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnalysisInsights } from './analysis-insights';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[];
   summary: AnalysisSummary;
-  params: GenerationParams | null; // Allow params to be null
+  params: GenerationParams | null;
   insights: string[];
   isMergePage?: boolean;
+}
+
+function StatsGrid({ summary, students }: { summary: AnalysisSummary, students: StudentWithCgpa[] }) {
+    const totalCreditsRequired = students.length > 0 ? students[0].total_credits_required : 130;
+    const avgCgpa = summary.average_cgpa ? summary.average_cgpa.toFixed(2) : 'N/A';
+    const avgAttendance = summary.average_attendance ? `${summary.average_attendance.toFixed(2)}%` : 'N/A';
+
+    return (
+        <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-3">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                    <CardTitle className="text-sm font-medium">Total Credits</CardTitle>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <Info className="w-4 h-4 text-gray-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Total credits required to complete the degree.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{totalCreditsRequired}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                    <CardTitle className="text-sm font-medium">Avg. CGPA</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{avgCgpa}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                    <CardTitle className="text-sm font-medium">Avg. Attendance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{avgAttendance}</div>
+                </CardContent>
+            </Card>
+        </div>
+    );
 }
 
 export function AcademicPerformance({ students, summary, params, insights, isMergePage = false }: AcademicPerformanceProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="md:col-span-2">
+            <StatsGrid summary={summary} students={students} />
+        </div>
         <div className="md:col-span-2">
             <AnalysisInsights insights={insights} />
         </div>

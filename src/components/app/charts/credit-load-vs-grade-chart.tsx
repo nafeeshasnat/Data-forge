@@ -33,14 +33,21 @@ export function CreditLoadVsGradeChart({ students }: CreditLoadVsGradeChartProps
 
     students.forEach(student => {
       if (student.semesterDetails) {
-        student.semesterDetails.forEach(semester => {
-            const creditBin = Math.round(semester.creditLoad / 3) * 3;
-            if (!creditBins.has(creditBin)) {
-                creditBins.set(creditBin, { totalGpa: 0, count: 0 });
+        const semesters = Array.isArray(student.semesterDetails)
+          ? student.semesterDetails
+          : Object.values(student.semesterDetails);
+
+        semesters.forEach(semester => {
+            // This condition now correctly handles cases where creditLoad or gpa is 0.
+            if (semester && semester.creditLoad != null && semester.gpa != null) {
+                const creditBin = Math.round(semester.creditLoad / 3) * 3;
+                if (!creditBins.has(creditBin)) {
+                    creditBins.set(creditBin, { totalGpa: 0, count: 0 });
+                }
+                const bin = creditBins.get(creditBin)!;
+                bin.totalGpa += semester.gpa;
+                bin.count++;
             }
-            const bin = creditBins.get(creditBin)!;
-            bin.totalGpa += semester.gpa;
-            bin.count++;
         });
       }
     });

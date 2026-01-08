@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import type { Student, GenerationParams, AnalysisSummary, StudentWithCgpa } from '@/lib/types';
 import { AcademicPerformance } from '@/components/app/academic-performance';
@@ -8,6 +9,7 @@ import { MergeSidebar } from '@/components/app/merge-sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function MergePage() {
   const [files, setFiles] = useState<FileList | null>(null);
@@ -18,6 +20,7 @@ export default function MergePage() {
   const [plainText, setPlainText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFiles(event.target.files);
@@ -163,6 +166,10 @@ export default function MergePage() {
     });
   };
 
+  const handleBack = () => {
+    navigate('/');
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <aside className="w-96 h-full overflow-y-auto border-r">
@@ -177,8 +184,9 @@ export default function MergePage() {
         />
       </aside>
       <main className="flex-1 p-6 overflow-auto">
-        <div className="mb-4">
+        <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold">Merge and Analyze Datasets</h1>
+            <Button onClick={handleBack} variant="outline">Back to Main</Button>
         </div>
         {isLoading ? (
             <div className="flex items-center justify-center h-full">
@@ -205,18 +213,6 @@ export default function MergePage() {
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {mergedStudents.length}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Total Credits
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {mergedStudents.reduce((acc, student) => acc + student.total_credits_earned, 0)}
                     </div>
                   </CardContent>
                 </Card>
