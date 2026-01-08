@@ -67,10 +67,11 @@ export default function MergePage() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Merge failed with status:", response.status, "and message:", errorText);
-        throw new Error(`Failed to merge files: ${response.statusText}`);
+        throw new Error(`Failed to merge files: ${errorText}`);
       }
 
       const result = await response.json();
+      console.log("Debug students:", result.students);
       const camelCaseResult = toCamelCase(result);
 
       // Add totalStudents to the summary
@@ -92,7 +93,7 @@ export default function MergePage() {
         console.error("An error occurred during merge:", error);
         toast({
             variant: "destructive",
-            title: "Merge Failed",
+            title: "An error occurred during merge: Error: Failed to merge files: ",
             description: (error as Error).message,
         });
     } finally {
