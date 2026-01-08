@@ -99,6 +99,8 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     const semesters: Record<string, Semester> = {};
     let semesterId = 1;
     let subjectsToAssign = [...studentSubjectPool];
+    // Assign a floating-point base attendance for more diversity
+    const studentBaseAttendance = uniform(60, 98);
 
     while (subjectsToAssign.length > 0) {
       const subjectCount = Math.min(Math.ceil(randint(params.minCredit, params.maxCredit) / params.creditsPerSubject), subjectsToAssign.length);
@@ -124,8 +126,10 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
           
           semesterGpa = gpa + creditImpact(actualCredits, params);
       }
+      
+      // Add small variance to the base attendance for each semester
+      const attendancePercentage = Math.max(0, Math.min(100, studentBaseAttendance + uniform(-2.5, 2.5)));
 
-      const attendancePercentage = randint(65, 100);
       const semesterData: Semester = {
         creditHours: actualCredits,
         attendancePercentage: attendancePercentage

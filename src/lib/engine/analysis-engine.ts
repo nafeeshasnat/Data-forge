@@ -1,7 +1,20 @@
 'use client';
 
-import type { Student, StudentWithCgpa, AnalysisSummary, PerformanceGroup, GenerationParams } from "@/lib/types";
-import { GRADE_SCALE } from "@/lib/types";
+import type { Student, StudentWithCgpa, AnalysisSummary, PerformanceGroup, GenerationParams, Grade } from "@/lib/types";
+
+const GRADE_SCALE: Record<Grade, number> = {
+    'A+': 4.0,
+    'A': 3.75,
+    'A-': 3.5,
+    'B+': 3.25,
+    'B': 3.0,
+    'B-': 2.75,
+    'C+': 2.5,
+    'C': 2.25,
+    'D': 2.0,
+    'F': 0.0,
+};
+
 
 /**
  * A simple string hashing function for deterministic shuffling.
@@ -142,11 +155,18 @@ export class AnalysisEngine {
   private calculateCgpa(student: Student): StudentWithCgpa {
     let totalGradePoints = 0;
     let totalCredits = 0;
+    let totalAttendance = 0;
+    let semesterCount = 0;
 
     for (const semesterId in student.semesters) {
       const semester = student.semesters[semesterId];
       let semesterSubjectsGradePoints = 0;
       let semesterSubjectCredits = 0;
+      
+      if (Object.keys(semester).length > 1) { // check if there's more than just creditHours/attendance
+          semesterCount++;
+          totalAttendance += semester.attendancePercentage || 0;
+      }
 
       for (const subject in semester) {
         if (subject !== 'creditHours' && subject !== 'attendancePercentage') {
@@ -163,7 +183,16 @@ export class AnalysisEngine {
     }
 
     const cgpa = totalCredits > 0 ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0;
-    return { ...student, cgpa, performanceGroup: this.classifyPerformance(cgpa) };
+    const avg_credit_load = semesterCount > 0 ? totalCredits / semesterCount : 0;
+    const avg_attendance = semesterCount > 0 ? totalAttendance / semesterCount : 0;
+
+    return {
+        ...student,
+        cgpa,
+        performanceGroup: this.classifyPerformance(cgpa),
+        avg_credit_load: parseFloat(avg_credit_load.toFixed(2)),
+        avg_attendance: parseFloat(avg_attendance.toFixed(2)),
+    };
   }
 
   /**
@@ -186,6 +215,8 @@ export class AnalysisEngine {
 
     const totalHscGpa = students.reduce((sum, s) => sum + s.hsc_gpa, 0);
     const totalCgpa = students.reduce((sum, s) => sum + s.cgpa, 0);
+    const totalAvgCreditLoad = students.reduce((sum, s) => sum + (s.avg_credit_load || 0), 0);
+    const totalAvgAttendance = students.reduce((sum, s) => sum + (s.avg_attendance || 0), 0);
 
     const departmentDistribution = students.reduce((acc, s) => {
       acc[s.department] = (acc[s.department] || 0) + 1;
@@ -203,6 +234,8 @@ export class AnalysisEngine {
       avgCgpa: parseFloat((totalCgpa / totalStudents).toFixed(2)),
       departmentDistribution,
       performanceDistribution,
+      average_credit_load: parseFloat((totalAvgCreditLoad / totalStudents).toFixed(2)),
+      average_attendance: parseFloat((totalAvgAttendance / totalStudents).toFixed(2)),
     };
   }
 }

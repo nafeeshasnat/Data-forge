@@ -2,6 +2,7 @@
 import json
 import sys
 import pandas as pd
+import numpy as np
 
 def process_student_data(students):
     """
@@ -41,22 +42,32 @@ def analyze_data(students_df):
     # --- Department Distribution ---
     summary['departmentDistribution'] = students_df['department'].value_counts().to_dict()
 
-    # --- HSC vs CGPA Density ---
+    # --- HSC vs CGPA Binned Scatter Plot ---
     if 'hsc_gpa' in students_df.columns:
-        students_df['hsc_bin'] = pd.cut(students_df['hsc_gpa'], bins=10)
-        students_df['cgpa_bin'] = pd.cut(students_df['cgpa'], bins=10)
-        density_data = students_df.groupby(['hsc_bin', 'cgpa_bin'], observed=False).size().reset_index(name='count')
-        
+        x_bins = 20
+        y_bins = 20
+        x_bin_width = (5.0 - 0.0) / x_bins
+        y_bin_width = (4.0 - 0.0) / y_bins
+
+        students_df['x_bin'] = np.floor((students_df['hsc_gpa'] - 0.0) / x_bin_width).astype(int)
+        students_df['y_bin'] = np.floor((students_df['cgpa'] - 0.0) / y_bin_width).astype(int)
+
+        # Clamp indices to valid ranges
+        students_df['x_bin'] = students_df['x_bin'].clip(0, x_bins - 1)
+        students_df['y_bin'] = students_df['y_bin'].clip(0, y_bins - 1)
+
+        bin_counts = students_df.groupby(['x_bin', 'y_bin']).size().reset_index(name='count')
+
         summary['hscVsCgpaDensity'] = [
             {
-                "hscGpa": round(hsc_bin.mid, 2),
-                "cgpa": round(cgpa_bin.mid, 2),
+                "preGpa": 0.0 + (x_bin + 0.5) * x_bin_width,
+                "uniCgpa": 0.0 + (y_bin + 0.5) * y_bin_width,
                 "count": count
             }
-            for hsc_bin, cgpa_bin, count in zip(density_data['hsc_bin'], density_data['cgpa_bin'], density_data['count'])
+            for x_bin, y_bin, count in zip(bin_counts['x_bin'], bin_counts['y_bin'], bin_counts['count'])
         ]
-        # Drop the temporary bin columns as they are not JSON serializable
-        students_df.drop(columns=['hsc_bin', 'cgpa_bin'], inplace=True)
+        students_df.drop(columns=['x_bin', 'y_bin'], inplace=True)
+
     else:
         summary['hscVsCgpaDensity'] = []
 

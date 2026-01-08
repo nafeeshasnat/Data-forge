@@ -1,98 +1,73 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import type { StudentWithCgpa, Grade, GenerationParams } from '@/lib/types';
-import { GRADE_SCALE } from '@/lib/types';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Label,
+} from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import type { StudentWithCgpa } from '@/lib/types';
 
 interface CreditLoadVsGradeChartProps {
   students: StudentWithCgpa[];
-  params: GenerationParams;
 }
 
 const chartConfig = {
   avgGpa: {
     label: "Average GPA",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(30, 59%, 34%)",
   },
 } satisfies ChartConfig;
 
-export function CreditLoadVsGradeChart({ students, params }: CreditLoadVsGradeChartProps) {
+export function CreditLoadVsGradeChart({ students }: CreditLoadVsGradeChartProps) {
   const data = useMemo(() => {
-    if (!students.length || !params) return [];
-
-    const creditLoadData: { [key: number]: { totalImpactedGpa: number; semesterCount: number } } = {};
+    if (!students) return [];
+    const creditBins = new Map<number, { totalGpa: number; count: number }>();
 
     students.forEach(student => {
-      Object.values(student.semesters).forEach(semester => {
-        let semesterTotalGradePoints = 0;
-        let subjectCount = 0;
-
-        Object.entries(semester).forEach(([key, value]) => {
-          if (key !== 'creditHours' && key !== 'attendancePercentage') {
-            semesterTotalGradePoints += (GRADE_SCALE[value as Grade] || 0);
-            subjectCount++;
-          }
-        });
-
-        if (subjectCount > 0) {
-            const semesterGpa = semesterTotalGradePoints / subjectCount;
-            const creditLoad = semester.creditHours;
-
-            let impactedGpa = semesterGpa;
-            if (creditLoad > params.stdCredit) {
-              const creditDeviation = creditLoad - params.stdCredit;
-              const creditImpactFactor = 1 - params.maxCreditImpact;
-              const creditImpact = Math.pow(creditImpactFactor, creditDeviation / 2);
-              impactedGpa = semesterGpa * creditImpact;
-            }
-
-            if (!creditLoadData[creditLoad]) {
-                creditLoadData[creditLoad] = { totalImpactedGpa: 0, semesterCount: 0 };
-            }
-            creditLoadData[creditLoad].totalImpactedGpa += impactedGpa;
-            creditLoadData[creditLoad].semesterCount++;
-        }
-      });
+      const creditBin = Math.round(student.avg_credit_load / 3) * 3;
+      if (!creditBins.has(creditBin)) {
+        creditBins.set(creditBin, { totalGpa: 0, count: 0 });
+      }
+      const bin = creditBins.get(creditBin)!;
+      bin.totalGpa += student.cgpa;
+      bin.count++;
     });
 
-    return Object.entries(creditLoadData).map(([creditLoad, { totalImpactedGpa, semesterCount }]) => ({
-      creditLoad: parseInt(creditLoad),
-      avgGpa: totalImpactedGpa / semesterCount,
-    })).sort((a, b) => a.creditLoad - b.creditLoad);
-
-  }, [students, params]);
+    return Array.from(creditBins.entries()).map(([credit, { totalGpa, count }]) => ({
+      credit,
+      avgGpa: totalGpa / count,
+    })).sort((a, b) => a.credit - b.credit);
+  }, [students]);
 
   return (
-    <Card>
+    <Card className='col-span-1'>
       <CardHeader>
         <CardTitle>Credit Load vs. Average Semester Grade</CardTitle>
-        <CardDescription>
-          Shows the impact of credit load deviation on the average semester grade.
-        </CardDescription>
+        <CardDescription>Average GPA for different credit loads.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <BarChart accessibilityLayer data={data}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="creditLoad"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              name="Credit Load"
-            />
-            <YAxis name="Average Grade" domain={[0, 4]}/>
-            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-            <Legend content={() => null} />
-            <Bar
-              dataKey="avgGpa"
-              fill="var(--color-avgGpa)"
-              radius={4}
-            />
-          </BarChart>
+        <ChartContainer config={chartConfig} className="h-[350px] w-full">
+            <BarChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="credit" type="category">
+                    <Label value="Credit Load" offset={-15} position="insideBottom" />
+                </XAxis>
+                <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} tickFormatter={(tick) => tick.toFixed(2)}>
+                    <Label value="Average Semester GPA" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
+                </YAxis>
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dot" />}
+                />
+                <Bar dataKey="avgGpa" fill="var(--color-avgGpa)" radius={4} />
+            </BarChart>
         </ChartContainer>
       </CardContent>
     </Card>

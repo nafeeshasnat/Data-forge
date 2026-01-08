@@ -10,6 +10,8 @@ export interface Student {
     entry_test_score?: number;
     extracurricular_activities?: string[];
     social_engagement?: number; // e.g., hours per week
+    avg_credit_load?: number;
+    avg_attendance?: number;
 }
 
 export interface StudentWithCgpa extends Student {

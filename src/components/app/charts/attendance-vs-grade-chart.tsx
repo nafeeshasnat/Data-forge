@@ -8,63 +8,42 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Label,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import type { Student, Grade } from '@/lib/types';
-
-const GRADE_SCALE: Record<Grade, number> = {
-    'A+': 4.0,
-    A: 3.75,
-    'A-': 3.5,
-    'B+': 3.25,
-    B: 3.0,
-    'B-': 2.75,
-    'C+': 2.5,
-    C: 2.25,
-    D: 2.0,
-    F: 0.0,
-};
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import type { StudentWithCgpa } from '@/lib/types';
 
 interface AttendanceVsGradeChartProps {
-  students: Student[];
+  students: StudentWithCgpa[];
 }
+
+const chartConfig = {
+  avgGpa: {
+    label: "Average GPA",
+    color: "hsl(var(--chart-1))",
+  },
+} satisfies ChartConfig;
 
 export function AttendanceVsGradeChart({ students }: AttendanceVsGradeChartProps) {
   const data = useMemo(() => {
-    const attendanceData: { [key: number]: { totalGpa: number; count: number } } = {};
+    if (!students) return [];
+    const attendanceBins = new Map<number, { totalGpa: number; count: number }>();
 
     students.forEach(student => {
-      Object.values(student.semesters).forEach(semester => {
-        let totalGradePoints = 0;
-        let subjectCount = 0;
-
-        Object.entries(semester).forEach(([key, value]) => {
-          if (key !== 'creditHours' && key !== 'attendancePercentage') {
-            totalGradePoints += GRADE_SCALE[value as Grade] || 0;
-            subjectCount++;
-          }
-        });
-
-        if (subjectCount > 0) {
-          const gpa = totalGradePoints / subjectCount;
-          const attendance = semester.attendancePercentage;
-          
-          if (!attendanceData[attendance]) {
-            attendanceData[attendance] = { totalGpa: 0, count: 0 };
-          }
-          attendanceData[attendance].totalGpa += gpa;
-          attendanceData[attendance].count++;
-        }
-      });
+      const attendanceBin = Math.floor(student.avg_attendance);
+      if (!attendanceBins.has(attendanceBin)) {
+        attendanceBins.set(attendanceBin, { totalGpa: 0, count: 0 });
+      }
+      const bin = attendanceBins.get(attendanceBin)!;
+      bin.totalGpa += student.cgpa;
+      bin.count++;
     });
 
-    return Object.entries(attendanceData).map(([attendance, { totalGpa, count }]) => ({
-        attendance: parseInt(attendance),
-        avgGpa: totalGpa / count,
-      })).sort((a, b) => a.attendance - b.attendance);
-
+    return Array.from(attendanceBins.entries()).map(([attendance, { totalGpa, count }]) => ({
+      attendance,
+      avgGpa: totalGpa / count,
+    })).sort((a, b) => a.attendance - b.attendance);
   }, [students]);
 
   return (
@@ -74,7 +53,7 @@ export function AttendanceVsGradeChart({ students }: AttendanceVsGradeChartProps
         <CardDescription>Average GPA for different attendance percentages.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
+        <ChartContainer config={chartConfig} className="h-[350px] w-full">
           <LineChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" dataKey="attendance" unit="%" domain={['dataMin', 'dataMax']}>
@@ -83,25 +62,14 @@ export function AttendanceVsGradeChart({ students }: AttendanceVsGradeChartProps
             <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} tickFormatter={(tick) => tick.toFixed(2)}>
                 <Label value="Average Semester GPA" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
             </YAxis>
-            <Tooltip content={<CustomTooltip />} />
-            <Line type="monotone" dataKey="avgGpa" stroke="#8884d8" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }}/>
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent indicator="dot" />}
+            />
+            <Line type="monotone" dataKey="avgGpa" stroke="var(--color-avgGpa)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }}/>
           </LineChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </CardContent>
     </Card>
   );
 }
-
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-lg border bg-background p-2 shadow-sm">
-          <p className="text-sm font-bold">{`Attendance: ${label}%`}</p>
-          <p className="text-sm text-muted-foreground">{`Avg. GPA: ${payload[0].value.toFixed(2)}`}</p>
-        </div>
-      );
-    }
-  
-    return null;
-  };
