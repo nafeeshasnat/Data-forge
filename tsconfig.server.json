@@ -1,9 +1,17 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "commonjs",
-    "outDir": "build",
-    "noEmit": false
+    "target": "es6",
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "noImplicitAny": false
   },
-  "include": ["server/server.ts"]
+  "include": ["server/**/*.ts"],
+  "exclude": ["node_modules"]
 }

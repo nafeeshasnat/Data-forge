@@ -5,7 +5,8 @@ import type { Student, GenerationParams, AnalysisSummary, StudentWithCgpa } from
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { MergeSidebar } from '@/components/app/merge-sidebar';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function MergePage() {
   const [files, setFiles] = useState<FileList | null>(null);
@@ -13,6 +14,7 @@ export default function MergePage() {
   const [summary, setSummary] = useState<AnalysisSummary | null>(null);
   const [insights, setInsights] = useState<string[]>([]);
   const [params, setParams] = useState<GenerationParams | null>(null);
+  const [plainText, setPlainText] = useState<string>('');
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +43,9 @@ export default function MergePage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to merge files');
+        const errorText = await response.text();
+        console.error("Merge failed with status:", response.status, "and message:", errorText);
+        throw new Error(`Failed to merge files: ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -50,18 +54,73 @@ export default function MergePage() {
       setSummary(result.summary);
       setMergedStudents(result.students);
       setInsights(result.insights);
+      setPlainText(''); // Clear plain text view
 
       toast({
         title: "Merge Successful",
         description: `Successfully merged and analyzed ${files.length} files.`,
       });
     } catch (error) {
+        console.error("An error occurred during merge:", error);
+        toast({
+            variant: "destructive",
+            title: "Merge Failed",
+            description: (error as Error).message,
+        });
+    }
+  };
+
+  const handleJsonToText = async (file: File) => {
+    console.log("handleJsonToText started");
+    if (!file) {
+      console.log("No file selected, aborting.");
       toast({
         variant: "destructive",
-        title: "Merge Failed",
+        title: "No file selected",
+        description: "Please select a JSON file to convert.",
+      });
+      return;
+    }
+
+    console.log(`File selected: ${file.name}, size: ${file.size}`);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      console.log("Sending request to /api/json-to-text");
+      const response = await fetch('/api/json-to-text', {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log(`Received response with status: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`JSON to text conversion failed with status: ${response.status}, message: ${errorText}`);
+        throw new Error(`Failed to convert file: ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.text();
+      console.log("Successfully received text result:", result);
+      setPlainText(result);
+      setMergedStudents([]); // Clear merge view
+      setSummary(null);
+      setInsights([]);
+      setParams(null);
+
+      toast({
+        title: "Conversion Successful",
+        description: "Successfully converted JSON file to plain text.",
+      });
+    } catch (error) {
+      console.error("An error occurred during conversion:", error);
+      toast({
+        variant: "destructive",
+        title: "Conversion Failed",
         description: (error as Error).message,
       });
     }
+    console.log("handleJsonToText finished");
   };
 
   const handleDownload = () => {
@@ -104,30 +163,6 @@ export default function MergePage() {
     });
   };
 
-  const handleHello = async () => {
-    try {
-      console.log('Fetching /api/hello');
-      const response = await fetch('/api/hello');
-      console.log('Response:', response);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('Data:', data);
-      toast({
-        title: "Message from backend",
-        description: data.message,
-      });
-    } catch (error) {
-      console.error("Failed to fetch message:", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to fetch message",
-        description: (error as Error).message,
-      });
-    }
-  };
-
   return (
     <div className="flex h-screen bg-background">
       <aside className="w-96 h-full overflow-y-auto border-r">
@@ -135,6 +170,7 @@ export default function MergePage() {
             onMerge={handleMerge} 
             onDownload={handleDownload} 
             onFileChange={handleFileChange}
+            onJsonToText={handleJsonToText}
             onTrim={handleTrim}
             mergedStudentsCount={mergedStudents.length} 
         />
@@ -142,19 +178,27 @@ export default function MergePage() {
       <main className="flex-1 p-6 overflow-auto">
         <div className="mb-4">
             <h1 className="text-2xl font-bold">Merge and Analyze Datasets</h1>
-            <Button onClick={handleHello}>Say Hello</Button>
         </div>
-        {mergedStudents.length > 0 && summary && params ? (
-            <AcademicPerformance students={mergedStudents} summary={summary} params={params} insights={insights} />
+        {plainText ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>JSON as Plain Text</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea value={plainText} readOnly rows={20} className="w-full p-2 font-mono" />
+            </CardContent>
+          </Card>
+        ) : mergedStudents.length > 0 && summary && params ? (
+            <AcademicPerformance students={mergedStudents} summary={summary} params={params} insights={insights} isMergePage={true} />
         ) : (
             <div className="flex items-center justify-center h-full text-center p-8 border rounded-lg bg-card">
                 <div>
                     <h2 className="text-xl font-semibold mb-2">Welcome to the Merge Page</h2>
                     <p className="text-muted-foreground mb-4">
-                        Here you can combine multiple student dataset files (JSON format) into a single dataset for a comprehensive analysis.
+                        Here you can combine multiple student dataset files (JSON format) into a single dataset for a comprehensive analysis or convert a single JSON file to plain text.
                     </p>
                     <p className="text-muted-foreground">
-                        Use the sidebar to upload your files, merge them, and then download the combined dataset. You can also trim the data based on CGPA and percentage.
+                        Use the sidebar to upload your files, merge them, convert to text, and then download the combined dataset. You can also trim the data based on CGPA and percentage.
                     </p>
                 </div>
             </div>

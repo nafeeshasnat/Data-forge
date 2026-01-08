@@ -14,16 +14,30 @@ interface MergeSidebarProps {
   onMerge: () => void;
   onDownload: () => void;
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onJsonToText: (file: File) => void;
   onTrim: (minCgpa: number, maxCgpa: number, percentage: number) => void;
   mergedStudentsCount: number;
 }
 
-export function MergeSidebar({ onMerge, onDownload, onFileChange, onTrim, mergedStudentsCount }: MergeSidebarProps) {
+export function MergeSidebar({ onMerge, onDownload, onFileChange, onJsonToText, onTrim, mergedStudentsCount }: MergeSidebarProps) {
   const [cgpaRange, setCgpaRange] = React.useState<[number, number]>([2.0, 3.0]);
   const [percentage, setPercentage] = React.useState<number>(10);
+  const [jsonFile, setJsonFile] = React.useState<File | null>(null);
 
   const handleTrimClick = () => {
     onTrim(cgpaRange[0], cgpaRange[1], percentage);
+  };
+
+  const handleJsonFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setJsonFile(event.target.files[0]);
+    }
+  };
+
+  const handleJsonToTextClick = () => {
+    if (jsonFile) {
+      onJsonToText(jsonFile);
+    }
   };
 
   return (
@@ -51,6 +65,23 @@ export function MergeSidebar({ onMerge, onDownload, onFileChange, onTrim, merged
           </Button>
           <Button onClick={onDownload} disabled={mergedStudentsCount === 0} className="w-full">
             Download Merged Dataset
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+       <Card>
+        <CardHeader>
+          <CardTitle>JSON to Text</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="json-file-upload">Upload JSON File</Label>
+            <Input id="json-file-upload" type="file" onChange={handleJsonFileChange} accept=".json" />
+          </div>
+          <Button onClick={handleJsonToTextClick} disabled={!jsonFile} className="w-full">
+            Convert to Text
           </Button>
         </CardContent>
       </Card>

@@ -1,57 +1,51 @@
-import express from 'express';
-import path from 'path';
-import fs from 'fs';
-import { spawn } from 'child_process';
-import multer from 'multer';
-
-const app = express();
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+const child_process_1 = require("child_process");
+const multer_1 = __importDefault(require("multer"));
+const app = (0, express_1.default)();
 const port = 3000;
 const pythonCommand = '/usr/bin/python3';
-
 // --- Multer Setup ---
-const tmpDir = path.join(__dirname, '..', 'tmp');
-const uploadDir = path.join(tmpDir, 'uploads');
-
-if (!fs.existsSync(tmpDir)) {
-  fs.mkdirSync(tmpDir, { recursive: true });
-  console.log(`[Server] Temporary directory created at: ${tmpDir}`);
+const tmpDir = path_1.default.join(__dirname, '..', 'tmp');
+const uploadDir = path_1.default.join(tmpDir, 'uploads');
+if (!fs_1.default.existsSync(tmpDir)) {
+    fs_1.default.mkdirSync(tmpDir, { recursive: true });
+    console.log(`[Server] Temporary directory created at: ${tmpDir}`);
 }
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log(`[Server] Upload directory created at: ${uploadDir}`);
+if (!fs_1.default.existsSync(uploadDir)) {
+    fs_1.default.mkdirSync(uploadDir, { recursive: true });
+    console.log(`[Server] Upload directory created at: ${uploadDir}`);
 }
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    console.log(`[Multer] Destination requested for file: ${file.originalname}`);
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    console.log(`[Multer] Filename requested for file: ${file.originalname}`);
-    cb(null, file.originalname);
-  }
+const storage = multer_1.default.diskStorage({
+    destination: function (req, file, cb) {
+        console.log(`[Multer] Destination requested for file: ${file.originalname}`);
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        console.log(`[Multer] Filename requested for file: ${file.originalname}`);
+        cb(null, file.originalname);
+    }
 });
-const upload = multer({ storage: storage });
+const upload = (0, multer_1.default)({ storage: storage });
 // --- End Multer Setup ---
-
 // API endpoint for testing python
 app.get('/api/test-python', (req, res) => {
     console.log("[API /api/test-python] Received request to test python execution.");
-
-    const pythonProcess = spawn(pythonCommand, ['--version']);
-
+    const pythonProcess = (0, child_process_1.spawn)(pythonCommand, ['--version']);
     let stdout = '';
     let stderr = '';
-
     pythonProcess.stdout.on('data', (data) => {
         stdout += data.toString();
     });
-
     pythonProcess.stderr.on('data', (data) => {
         stderr += data.toString();
     });
-
     pythonProcess.on('close', (code) => {
         console.log(`[API /api/test-python] Python process finished with code ${code}`);
         if (code !== 0) {
@@ -60,7 +54,8 @@ app.get('/api/test-python', (req, res) => {
                 stdout: stdout,
                 stderr: stderr,
             });
-        } else {
+        }
+        else {
             res.json({
                 message: 'Python execution test successful.',
                 stdout: stdout,
@@ -68,7 +63,6 @@ app.get('/api/test-python', (req, res) => {
             });
         }
     });
-
     pythonProcess.on('error', (error) => {
         console.error("[API /api/test-python] Failed to start python process:", error);
         res.status(500).json({
@@ -77,103 +71,83 @@ app.get('/api/test-python', (req, res) => {
         });
     });
 });
-
-
 // API endpoint for merge and analyze
 app.post('/api/merge', upload.array('files'), (req, res) => {
     console.log("[API /api/merge] Received request to merge files.");
-
-    const files = req.files as Express.Multer.File[];
+    const files = req.files;
     if (!files || files.length === 0) {
         console.log("[API /api/merge] No files were uploaded.");
         return res.status(400).json({ error: 'No files uploaded' });
     }
-
     const filePaths = files.map(file => file.path);
     console.log(`[API /api/merge] Received ${files.length} files to process at paths: ${filePaths.join(', ')}`);
-
-    const scriptPath = path.join(__dirname, '..', 'src', 'scripts', 'merge_and_analyze.py');
+    const scriptPath = path_1.default.join(__dirname, '..', 'src', 'scripts', 'merge_and_analyze.py');
     console.log(`[API /api/merge] Executing python script at: ${scriptPath}`);
-
-    const pythonProcess = spawn(pythonCommand, [scriptPath, ...filePaths]);
-
+    const pythonProcess = (0, child_process_1.spawn)(pythonCommand, [scriptPath, ...filePaths]);
     let stdout = '';
     let stderr = '';
-
     pythonProcess.stdout.on('data', (data) => {
         console.log(`[Python] stdout: ${data}`);
         stdout += data.toString();
     });
-
     pythonProcess.stderr.on('data', (data) => {
         console.error(`[Python] stderr: ${data}`);
         stderr += data.toString();
     });
-
     pythonProcess.on('close', (code) => {
         console.log(`[API /api/merge] Python script finished with code ${code}`);
-        filePaths.forEach(filePath => fs.unlink(filePath, err => {
-            if (err) console.error(`[API /api/merge] Failed to cleanup file ${filePath}:`, err);
+        filePaths.forEach(filePath => fs_1.default.unlink(filePath, err => {
+            if (err)
+                console.error(`[API /api/merge] Failed to cleanup file ${filePath}:`, err);
         }));
-
         if (code !== 0) {
             console.error(`[API /api/merge] Stderr: ${stderr}`);
             return res.status(500).json({ error: 'Script execution failed', details: stderr });
         }
-
         try {
             const result = JSON.parse(stdout);
             console.log("[API /api/merge] Merge and analysis successful, sending response.");
             res.json(result);
-        } catch (parseError) {
+        }
+        catch (parseError) {
             console.error("[API /api/merge] Failed to parse python script output:", parseError);
             res.status(500).json({ error: 'Failed to parse script output', details: stdout });
         }
     });
-
     pythonProcess.on('error', (error) => {
         console.error("[API /api/merge] Failed to start python process:", error);
-        res.status(500).json({ error: 'Failed to start analysis process'});
+        res.status(500).json({ error: 'Failed to start analysis process' });
     });
 });
-
 // API endpoint for JSON to text conversion
 app.post('/api/json-to-text', upload.single('file'), (req, res) => {
     console.log("[API /api/json-to-text] Received request for JSON to text conversion.");
-
     const file = req.file;
     if (!file) {
         console.log("[API /api/json-to-text] No file was uploaded.");
         return res.status(400).json({ error: 'No file uploaded' });
     }
-
     const filePath = file.path;
     console.log(`[API /api/json-to-text] Received file to process at path: ${filePath}`);
-
-    const scriptPath = path.join(__dirname, '..', 'src', 'scripts', 'json_to_text.py');
+    const scriptPath = path_1.default.join(__dirname, '..', 'src', 'scripts', 'json_to_text.py');
     console.log(`[API /api/json-to-text] Executing python script at: ${scriptPath}`);
-
-    const pythonProcess = spawn(pythonCommand, [scriptPath, filePath]);
-
+    const pythonProcess = (0, child_process_1.spawn)(pythonCommand, [scriptPath, filePath]);
     let stdout = '';
     let stderr = '';
-
     pythonProcess.stdout.on('data', (data) => {
         console.log(`[Python] stdout: ${data}`);
         stdout += data.toString();
     });
-
     pythonProcess.stderr.on('data', (data) => {
         console.error(`[Python] stderr: ${data}`);
         stderr += data.toString();
     });
-
     pythonProcess.on('close', (code) => {
         console.log(`[API /api/json-to-text] Python script finished with code ${code}`);
-        fs.unlink(filePath, err => {
-            if (err) console.error(`[API /api/json-to-text] Failed to cleanup file ${filePath}:`, err);
+        fs_1.default.unlink(filePath, err => {
+            if (err)
+                console.error(`[API /api/json-to-text] Failed to cleanup file ${filePath}:`, err);
         });
-
         if (code !== 0) {
             console.error(`[API /api/json-to-text] Python script failed with code ${code}.`);
             console.error(`[API /api/json-to-text] stderr: ${stderr}`);
@@ -187,11 +161,9 @@ app.post('/api/json-to-text', upload.single('file'), (req, res) => {
                 }
             });
         }
-
         console.log("[API /api/json-to-text] JSON to text conversion successful, sending response.");
         res.send(stdout);
     });
-
     pythonProcess.on('error', (error) => {
         console.error(`[API /api/json-to-text] Failed to start python process: ${error.message}`);
         res.status(500).json({
@@ -200,15 +172,13 @@ app.post('/api/json-to-text', upload.single('file'), (req, res) => {
         });
     });
 });
-
 // Serve static files from the dist directory
-app.use(express.static(path.join(__dirname, '..', 'dist')));
-
+app.use(express_1.default.static(path_1.default.join(__dirname, '..', 'dist')));
 // For any other request, serve the index.html file
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    res.sendFile(path_1.default.join(__dirname, '..', 'dist', 'index.html'));
 });
-
 app.listen(port, () => {
-  console.log(`[Server] Server listening on port ${port}`);
+    console.log(`[Server] Server listening on port ${port}`);
 });
+//# sourceMappingURL=server.js.map

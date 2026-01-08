@@ -4,6 +4,7 @@ import type { StudentWithCgpa, AnalysisSummary, GenerationParams } from '@/lib/t
 import { CgpaDistributionChart } from './charts/cgpa-distribution-chart';
 import { DepartmentDistributionChart } from './charts/department-distribution-chart';
 import { HscVsCgpaChart } from './charts/hsc-vs-cgpa-chart';
+import { HscVsCgpaDensityChart } from './charts/hsc-vs-cgpa-density-chart';
 import { PerformanceDistributionChart } from './charts/performance-distribution-chart';
 import { CreditLoadVsGradeChart } from './charts/credit-load-vs-grade-chart';
 import { AttendanceVsGradeChart } from './charts/attendance-vs-grade-chart';
@@ -17,9 +18,10 @@ interface AcademicPerformanceProps {
   summary: AnalysisSummary;
   params: GenerationParams;
   insights: string[];
+  isMergePage?: boolean;
 }
 
-export function AcademicPerformance({ students, summary, params, insights }: AcademicPerformanceProps) {
+export function AcademicPerformance({ students, summary, params, insights, isMergePage = false }: AcademicPerformanceProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
@@ -48,7 +50,11 @@ export function AcademicPerformance({ students, summary, params, insights }: Aca
           <CardTitle>HSC vs CGPA</CardTitle>
         </CardHeader>
         <CardContent>
-          <HscVsCgpaChart students={students} />
+          {isMergePage ? (
+            <HscVsCgpaDensityChart students={students} />
+          ) : (
+            <HscVsCgpaChart students={students} />
+          )}
         </CardContent>
       </Card>
 
