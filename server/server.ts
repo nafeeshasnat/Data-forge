@@ -9,17 +9,21 @@ const port = 3000;
 const pythonCommand = '/usr/bin/python3';
 
 // --- Multer Setup ---
-const tmpDir = path.join(__dirname, '..', 'tmp');
+const tmpDir = path.resolve(__dirname, '..', 'tmp');
 const uploadDir = path.join(tmpDir, 'uploads');
 
-if (!fs.existsSync(tmpDir)) {
-  fs.mkdirSync(tmpDir, { recursive: true });
-  console.log(`[Server] Temporary directory created at: ${tmpDir}`);
-}
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log(`[Server] Upload directory created at: ${uploadDir}`);
+try {
+  if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir, { recursive: true });
+    console.log(`[Server] Temporary directory created at: ${tmpDir}`);
+  }
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log(`[Server] Upload directory created at: ${uploadDir}`);
+  }
+} catch (error) {
+  console.error(`[Server] Fatal error: Could not create temporary directories. Please check permissions.`, error);
+  process.exit(1);
 }
 
 const storage = multer.diskStorage({
@@ -118,7 +122,7 @@ app.post('/api/merge', upload.array('files'), (req, res) => {
 
         if (code !== 0) {
             console.error(`[API /api/merge] Stderr: ${stderr}`);
-            return res.status(500).json({ error: 'Script execution failed', details: stderr });
+            return res.status(500).send(stderr); // Send HTML error page directly
         }
 
         try {
