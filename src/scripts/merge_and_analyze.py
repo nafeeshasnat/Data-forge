@@ -91,22 +91,30 @@ def process_student_data(students):
         student['hsc_gpa'] = hsc_gpa
         student['pre_grad_gpa'] = pre_grad_gpa
 
-
-        # --- Standardize Semester Structure (dict to list) ---
-        semesters_list = []
+        # --- Standardize Semester Structure and preserve semester numbers ---
+        semesters_dict = {}
         if "semesters" in student and isinstance(student.get("semesters"), dict):
-             semesters_list = list(student["semesters"].values())
+            for sem_num, sem_data in student["semesters"].items():
+                if isinstance(sem_data, dict):
+                    # Keep original keys, remove temporary ones if present
+                    semesters_dict[sem_num] = sem_data
         elif "semesterDetails" in student and isinstance(student.get("semesterDetails"), list):
-             semesters_list = student["semesterDetails"]
+            # fallback: convert list to dict with index as key starting at 1
+            for i, sem_data in enumerate(student["semesterDetails"], 1):
+                if isinstance(sem_data, dict):
+                    semesters_dict[str(i)] = sem_data
         elif "semesters" in student and isinstance(student.get("semesters"), list):
-            semesters_list = student["semesters"]
-        
-        student["semesters"] = semesters_list # Replace original with list
-        if "semesterDetails" in student: # Clean up old key
+            for i, sem_data in enumerate(student["semesters"], 1):
+                if isinstance(sem_data, dict):
+                    semesters_dict[str(i)] = sem_data
+
+        student["semesters"] = semesters_dict  # Keep as dict
+        if "semesterDetails" in student:  # Clean up old key
             del student["semesterDetails"]
 
+
         # --- Process Each Semester (in-place) ---
-        for semester in student.get("semesters", []):
+        for semester in student.get("semesters", {}).values():
             if not isinstance(semester, dict):
                 continue
 
@@ -141,7 +149,11 @@ def process_student_data(students):
             semester['attendancePercentage'] = attendance_val
 
         # --- Calculate Student-Level Aggregates ---
-        valid_attendances = [s['attendancePercentage'] for s in student["semesters"] if pd.notna(s.get('attendancePercentage'))]
+        valid_attendances = [
+            s['attendancePercentage'] 
+            for s in student["semesters"].values()  # <-- .values() here
+            if isinstance(s, dict) and pd.notna(s.get('attendancePercentage'))
+        ]
         student['avg_attendance'] = np.mean(valid_attendances) if valid_attendances else np.nan
         
         # Standardize CGPA
@@ -149,7 +161,9 @@ def process_student_data(students):
             total_points = 0
             total_credits = 0
 
-            for s in student['semesters']:
+            for s in student['semesters'].values():
+                if not isinstance(s, dict):
+                    continue
                 if pd.notna(s.get('gpa')) and pd.notna(s.get('creditLoad')):
                     total_points += s['gpa'] * s['creditLoad']
                     total_credits += s['creditLoad']
@@ -372,9 +386,19 @@ def main():
         sys.exit(1)
 
     processed_students = process_student_data(all_students)
-    students_df = pd.DataFrame(processed_students)
-    
+
+    # --- Convert semesters dict to list temporarily for analysis ---
+    student_list_for_analysis = []
+    for student in processed_students:
+        semesters_as_list = list(student['semesters'].values())
+        student_copy = student.copy()
+        student_copy['semesters'] = semesters_as_list
+        student_list_for_analysis.append(student_copy)
+
+    students_df = pd.DataFrame(student_list_for_analysis)
+
     summary, insights = analyze_data(students_df.copy(), plot_points=plot_points)
+
 
     def convert_numpy_types(obj):
         if isinstance(obj, dict):
@@ -401,14 +425,28 @@ def main():
 
     # --- Clean up DataFrame for final download ---
     # Ensure 'id' is kept for the final JSON output if it exists
+
     final_columns = [col for col in students_df.columns if col not in ['pre_grad_gpa', 'avg_attendance', 'performance_group', 'semester_details']]
     students_df_cleaned = students_df[final_columns]
 
+    students_df_cleaned = students_df[final_columns].copy()
     students_df_cleaned.replace({np.nan: None}, inplace=True)
     final_students_json = students_df_cleaned.to_dict('records')
     
+
+    final_students_json = []
+    for student in processed_students:
+        student_copy = student.copy()
+        # Remove gpa and creditLoad from semesters for download
+        student_copy['semesters'] = {
+            k: {kk: vv for kk, vv in v.items() if kk not in ['gpa', 'creditLoad']}
+            for k, v in student_copy['semesters'].items()
+        }
+        final_students_json.append(student_copy)
+
     with open(output_path, 'w') as f:
         json.dump(final_students_json, f, indent=2)
+        
     # ---------------------------------------------
 
     result = {
