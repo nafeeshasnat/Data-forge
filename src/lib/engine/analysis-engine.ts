@@ -244,8 +244,8 @@ export class AnalysisEngine {
    * Classifies a student's performance based on their CGPA.
    */
   private classifyPerformance(cgpa: number): PerformanceGroup {
-    if (cgpa >= 3.6) return 'High';
-    if (cgpa >= 2.5) return 'Mid';
+    if (cgpa >= 3.5) return 'High';
+    if (cgpa >= 2.0) return 'Mid';
     return 'Low';
   }
 

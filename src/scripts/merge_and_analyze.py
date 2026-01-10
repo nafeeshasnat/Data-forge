@@ -423,27 +423,24 @@ def main():
     download_filename = f"merged_data_{uuid.uuid4()}.json"
     output_path = os.path.join(output_dir, download_filename)
 
-    # --- Clean up DataFrame for final download ---
-    # Ensure 'id' is kept for the final JSON output if it exists
-
-    final_columns = [col for col in students_df.columns if col not in ['pre_grad_gpa', 'avg_attendance', 'performance_group', 'semester_details']]
-    students_df_cleaned = students_df[final_columns]
-
-    students_df_cleaned = students_df[final_columns].copy()
-    students_df_cleaned.replace({np.nan: None}, inplace=True)
-    final_students_json = students_df_cleaned.to_dict('records')
-    
-
+    # --- Prepare final JSON for download ---
     final_students_json = []
     for student in processed_students:
         student_copy = student.copy()
-        # Remove gpa and creditLoad from semesters for download
+        
+        # Remove GPA/creditLoad inside semesters
         student_copy['semesters'] = {
             k: {kk: vv for kk, vv in v.items() if kk not in ['gpa', 'creditLoad']}
             for k, v in student_copy['semesters'].items()
         }
+        
+        # Remove unwanted top-level fields
+        for key in ['pre_grad_gpa', 'avg_attendance', 'performance_group', 'semester_details', 'id', 'cgpa']:
+            student_copy.pop(key, None)
+        
         final_students_json.append(student_copy)
 
+    # Save JSON
     with open(output_path, 'w') as f:
         json.dump(final_students_json, f, indent=2)
         

@@ -129,61 +129,65 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     let semesterId = 1;
     let subjectsToAssign = [...studentSubjectPool];
     const studentBaseAttendance = uniform(60, 98);
+    let prevAccumulatedGpa = 0.0; // start with 0 accumulated GPA
 
     while (subjectsToAssign.length > 0) {
       const subjectCount = Math.min(Math.ceil(randint(params.minCredit, params.maxCredit) / params.creditsPerSubject), subjectsToAssign.length);
       const actualCredits = subjectCount * params.creditsPerSubject;
-
       const semesterSubjects = subjectsToAssign.splice(0, subjectCount);
-
+    
+      // --- PreGrad decay and accumulated GPA impact ---
+      const preGradDecay = params.preGradDecay ?? 0.9; // decay per semester
+      const w_preGrad = Math.pow(preGradDecay, semesterId - 1);
+      const w_accum = 1 - w_preGrad;
+    
       let semesterGpa: number;
-      
+    
       if (isPerfectScorer) {
         semesterGpa = 4.0;
       } else {
-          let gpa = preGradUniGpa + uniform(-0.4, 0.4);
-
-          if (performanceGroup !== 'High' && Math.random() < params.exceptionPercentage) {
-            gpa += getExceptionalPerformanceGroup(performanceGroup) === 'High' ? 0.75 : -0.75;
-          }
-
-          if (performanceGroup === 'High') {
-            const perfectScorePush = (preGradUniGpa / 4.0) * params.preGradScoreInfluence;
-            gpa = gpa * (1 - perfectScorePush) + 4.0 * perfectScorePush;
-          }
-          
-          semesterGpa = gpa + creditImpact(actualCredits, params);
+        // Base GPA influenced by pre-grad and previous semesters
+        let baseGpa = preGradUniGpa * w_preGrad + prevAccumulatedGpa * w_accum;
+    
+        // Random noise per semester
+        baseGpa += uniform(-0.2, 0.2);
+    
+        // Exceptional performance adjustment
+        if (performanceGroup !== 'High' && Math.random() < params.exceptionPercentage) {
+          baseGpa += getExceptionalPerformanceGroup(performanceGroup) === 'High' ? 0.75 : -0.75;
+        }
+    
+        // High performer "perfect score push"
+        if (performanceGroup === 'High') {
+          const perfectScorePush = (preGradUniGpa / 4.0) * params.preGradScoreInfluence;
+          baseGpa = baseGpa * (1 - perfectScorePush) + 4.0 * perfectScorePush;
+        }
+    
+        // Credit and attendance impact
+        semesterGpa = baseGpa + creditImpact(actualCredits, params);
+        const attendancePercentage = Math.round(Math.max(0, Math.min(100, studentBaseAttendance + uniform(-2.5, 2.5))));
+        const attendanceImpact = (attendancePercentage - 82.5) / 17.5 * params.attendanceImpact;
+        semesterGpa += attendanceImpact;
+    
+        // Clamp GPA
+        semesterGpa = Math.max(0.0, Math.min(4.0, semesterGpa));
       }
-      
-      const attendancePercentage = Math.round(Math.max(0, Math.min(100, studentBaseAttendance + uniform(-2.5, 2.5))));
-
+    
+      // Update accumulated GPA
+      prevAccumulatedGpa = ((prevAccumulatedGpa * (semesterId - 1)) + semesterGpa) / semesterId;
+    
+      // --- Assign grades to subjects ---
       const semesterData: Semester = {
         creditHours: actualCredits,
-        attendancePercentage: attendancePercentage
+        attendancePercentage: Math.round(Math.max(0, Math.min(100, studentBaseAttendance + uniform(-2.5, 2.5))))
       };
-
-      const attendanceImpact = (attendancePercentage - 82.5) / 17.5 * params.attendanceImpact;
-
+    
       for (const subject of semesterSubjects) {
-        let finalGpaForSubject: number;
-        if (isPerfectScorer) {
-            finalGpaForSubject = 4.0;
-        } else {
-            let noisyGpa = semesterGpa + uniform(-0.1, 0.1);
-            noisyGpa += attendanceImpact;
-
-            if (semesterId === 1 && Math.random() < 0.05) { 
-                noisyGpa = 0.0;
-            }
-            finalGpaForSubject = Math.max(0.0, Math.min(4.0, noisyGpa));
-        }
-        
-        const grade = gpaToGrade(finalGpaForSubject);
-        semesterData[subject] = grade;
+        let finalGpaForSubject = isPerfectScorer ? 4.0 : Math.max(0, Math.min(4.0, semesterGpa + uniform(-0.1, 0.1)));
+        semesterData[subject] = gpaToGrade(finalGpaForSubject);
       }
-      
+    
       semesters[String(semesterId)] = semesterData;
-
       semesterId++;
     }
 
