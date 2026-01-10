@@ -1,9 +1,11 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Toaster } from '@/components/ui/toaster';
 import Home from '@/app/page';
 import MergePage from '@/app/merge/page';
+import TrimPage from '@/app/trim/page'; // Import the new Trim page
 import './index.css';
 
 const router = createBrowserRouter([
@@ -14,6 +16,10 @@ const router = createBrowserRouter([
   {
     path: "/merge",
     element: <MergePage />,
+  },
+  {
+    path: "/trim",
+    element: <TrimPage />,
   },
 ]);
 

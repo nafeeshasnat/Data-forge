@@ -35,3 +35,12 @@ export type GenerationParams = {
 };
 
 export type PerformanceGroup = 'High' | 'Mid' | 'Low';
+
+export type AnalysisSummary = {
+  total_students: number;
+  avg_cgpa: number;
+  avg_attendance: number;
+  performance_distribution: { name: string; value: number }[];
+  department_distribution: { name: string; value: number }[];
+  [key: string]: any; // Allow other keys
+};

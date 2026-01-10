@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ParameterSidebar } from '@/components/app/parameter-sidebar';
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { Logo } from '@/components/app/logo';
-import { BotMessageSquare, GitMerge, Download } from 'lucide-react';
+import { BotMessageSquare, GitMerge, Download, Scissors } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 
@@ -132,6 +132,11 @@ export function MainPage() {
                 <Download className="h-4 w-4 mr-2" />
                 Download Dataset
             </Button>
+            <Link to="/trim">
+              <Button variant="outline" size="icon">
+                <Scissors className="h-4 w-4" />
+              </Button>
+            </Link>
             <Link to="/merge">
               <Button variant="outline" size="icon">
                 <GitMerge className="h-4 w-4" />
