@@ -101,7 +101,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
   const students: Student[] = [];
   const currentYear = new Date().getFullYear();
   const maxBirthYear = currentYear - 30;
-  const minBirthYear = maxBirthYear - 12;
+  const minBirthYear = maxBirthYear - 1;
 
   // Get the unique generation ID for this batch of students
   const generationId = getNextGenerationId();

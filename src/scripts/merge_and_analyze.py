@@ -401,7 +401,7 @@ def main():
 
     # --- Clean up DataFrame for final download ---
     # Ensure 'id' is kept for the final JSON output if it exists
-    final_columns = [col for col in students_df.columns if col not in ['semesters', 'pre_grad_gpa', 'avg_attendance', 'performance_group', 'semester_details']]
+    final_columns = [col for col in students_df.columns if col not in ['pre_grad_gpa', 'avg_attendance', 'performance_group', 'semester_details']]
     students_df_cleaned = students_df[final_columns]
 
     students_df_cleaned.replace({np.nan: None}, inplace=True)
