@@ -112,7 +112,7 @@ def process_student_data(students):
 
     return students
 
-def analyze_data(students_df):
+def analyze_data(students_df, plot_points=10):
     """Performs an in-depth analysis of the processed student dataset."""
     summary = {}
 
@@ -125,6 +125,7 @@ def analyze_data(students_df):
             'department_distribution': [],
             'cgpa_distribution': [],
             'credit_load_vs_grade': [],
+            'attendance_vs_grade': [],
             'semester_count_distribution': [],
             'credit_distribution': []
         }, []
@@ -190,11 +191,12 @@ def analyze_data(students_df):
     else:
         summary['hsc_vs_cgpa_density'] = []
 
-    # Credit Load vs. Grade Analysis
+    # Credit Load and Attendance vs. Grade Analysis
     all_semesters = students_df.explode('semesters')
-    all_semesters = all_semesters[all_semesters['semesters'].apply(lambda s: isinstance(s, dict) and pd.notna(s.get('creditLoad')) and pd.notna(s.get('gpa')))]
+    all_semesters = all_semesters[all_semesters['semesters'].apply(lambda s: isinstance(s, dict) and pd.notna(s.get('creditLoad')) and pd.notna(s.get('gpa')) and pd.notna(s.get('attendancePercentage')))]
 
     if not all_semesters.empty:
+        # Credit Load vs Grade
         credit_bins = {}
         for _, row in all_semesters.iterrows():
             semester = row['semesters']
@@ -208,8 +210,30 @@ def analyze_data(students_df):
             {"creditLoad": k, "avgGpa": v['total_gpa'] / v['count']}
             for k, v in credit_bins.items()
         ], key=lambda x: x['creditLoad'])
+        
+        # Attendance vs Grade
+        min_attendance = all_semesters['semesters'].apply(lambda s: s['attendancePercentage']).min()
+        max_attendance = all_semesters['semesters'].apply(lambda s: s['attendancePercentage']).max()
+        bin_size = (max_attendance - min_attendance) / plot_points
+        
+        attendance_bins = {}
+        for _, row in all_semesters.iterrows():
+            semester = row['semesters']
+            attendance_bin = int(np.floor((semester['attendancePercentage'] - min_attendance) / bin_size))
+            if attendance_bin not in attendance_bins:
+                attendance_bins[attendance_bin] = {'total_gpa': 0, 'total_attendance': 0, 'count': 0}
+            attendance_bins[attendance_bin]['total_gpa'] += semester['gpa']
+            attendance_bins[attendance_bin]['total_attendance'] += semester['attendancePercentage']
+            attendance_bins[attendance_bin]['count'] += 1
+            
+        summary['attendance_vs_grade'] = sorted([
+            {"attendance": v['total_attendance'] / v['count'], "avgGpa": v['total_gpa'] / v['count']}
+            for k, v in attendance_bins.items()
+        ], key=lambda x: x['attendance'])
+
     else:
         summary['credit_load_vs_grade'] = []
+        summary['attendance_vs_grade'] = []
     
     # Semester Count Distribution
     semester_counts = students_df['semesters'].apply(lambda s: len(s) if isinstance(s, list) else 0)
@@ -260,7 +284,21 @@ def analyze_data(students_df):
     return summary, insights
 
 def main():
-    file_paths = sys.argv[1:]
+    # Default plot points
+    plot_points = 10
+    file_paths = []
+
+    # Separate file paths from other arguments
+    for arg in sys.argv[1:]:
+        if arg.startswith('--plot-points='):
+            try:
+                plot_points = int(arg.split('=')[1])
+            except (ValueError, IndexError):
+                print(json.dumps({"error": "Invalid value for --plot-points"}), file=sys.stderr)
+                sys.exit(1)
+        else:
+            file_paths.append(arg)
+
     if not file_paths:
         print(json.dumps({"error": "No file paths provided"}), file=sys.stderr)
         sys.exit(1)
@@ -270,10 +308,8 @@ def main():
         try:
             with open(file_path, 'r') as f:
                 data = json.load(f)
-                # Check if data is a dictionary and has 'students' key
                 if isinstance(data, dict) and 'students' in data:
                     students_to_extend = data['students']
-                # Check if data is a list
                 elif isinstance(data, list):
                     students_to_extend = data
                 else:
@@ -290,7 +326,7 @@ def main():
     processed_students = process_student_data(all_students)
     students_df = pd.DataFrame(processed_students)
     
-    summary, insights = analyze_data(students_df)
+    summary, insights = analyze_data(students_df, plot_points=plot_points)
 
     def convert_numpy_types(obj):
         if isinstance(obj, dict):

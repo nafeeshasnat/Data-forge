@@ -1,6 +1,6 @@
 'use client';
 import { useMemo } from 'react';
-import type { StudentWithCgpa, AnalysisSummary, GenerationParams, CreditLoadVsGradeData } from '@/lib/types';
+import type { StudentWithCgpa, AnalysisSummary, GenerationParams, CreditLoadVsGradeData, AttendanceVsGradeData } from '@/lib/types';
 import { CgpaDistributionChart } from './charts/cgpa-distribution-chart';
 import { DepartmentDistributionChart } from './charts/department-distribution-chart';
 import { HscVsCgpaChart } from './charts/hsc-vs-cgpa-chart';
@@ -8,6 +8,7 @@ import { HscVsCgpaDensityChart } from './charts/hsc-vs-cgpa-density-chart';
 import { PerformanceDistributionChart } from './charts/performance-distribution-chart';
 import { CreditLoadVsGradeChart } from './charts/credit-load-vs-grade-chart';
 import { AttendanceVsGradeChart } from './charts/attendance-vs-grade-chart';
+import { MergeAttendanceVsGradeChart } from './charts/merge-attendance-vs-grade-chart';
 import { SemesterCountChart } from './charts/semester-count-chart';
 import { CreditDistributionChart } from './charts/credit-distribution-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,6 +86,13 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
     }
     return computeCreditLoadVsGradeData(students);
   }, [students, summary, isMergePage]);
+
+  const attendanceVsGradeData: AttendanceVsGradeData[] = useMemo(() => {
+    if (isMergePage) {
+        return summary.attendanceVsGrade || [];
+    }
+    return []; // This chart is not used on the main page
+  }, [summary, isMergePage]);
 
   const semesterCountChartData = useMemo(() => {
     if (isMergePage) {
@@ -174,14 +182,25 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Attendance vs Grade</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AttendanceVsGradeChart students={students} />
-        </CardContent>
-      </Card>
+      {isMergePage ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Attendance vs Grade</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MergeAttendanceVsGradeChart data={attendanceVsGradeData} />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Attendance vs Grade</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AttendanceVsGradeChart students={students} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

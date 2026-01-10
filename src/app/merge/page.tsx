@@ -35,6 +35,7 @@ export default function MergePage() {
   const [params, setParams] = useState<GenerationParams | null>(null);
   const [plainText, setPlainText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [plotPoints, setPlotPoints] = useState<number>(80);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -57,6 +58,7 @@ export default function MergePage() {
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
     }
+    formData.append('plotPoints', plotPoints.toString());
 
     try {
       const response = await fetch('/api/merge', {

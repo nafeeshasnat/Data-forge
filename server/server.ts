@@ -93,13 +93,17 @@ app.post('/api/merge', upload.array('files'), (req, res) => {
         return res.status(400).json({ error: 'No files uploaded' });
     }
 
+    const plotPoints = req.body.plotPoints || 10;
+
     const filePaths = files.map(file => file.path);
     console.log(`[API /api/merge] Received ${files.length} files to process at paths: ${filePaths.join(', ')}`);
 
     const scriptPath = path.join(__dirname, '..', 'src', 'scripts', 'merge_and_analyze.py');
     console.log(`[API /api/merge] Executing python script at: ${scriptPath}`);
 
-    const pythonProcess = spawn(pythonCommand, [scriptPath, ...filePaths]);
+    const pythonArgs = [...filePaths, `--plot-points=${plotPoints}`];
+
+    const pythonProcess = spawn(pythonCommand, [scriptPath, ...pythonArgs]);
 
     let stdout = '';
     let stderr = '';
