@@ -1,9 +1,10 @@
+
 'use client';
 
 import * as React from 'react';
 import { generateSyntheticData } from '@/lib/data-generator';
 import { AnalysisEngine } from '@/lib/engine/analysis-engine';
-import type { GenerationParams, StudentWithCgpa, AnalysisSummary } from '@/lib/types';
+import type { GenerationParams, Student, StudentWithCgpa, AnalysisSummary } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Sidebar, SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,21 @@ import { Logo } from '@/components/app/logo';
 import { BotMessageSquare, GitMerge, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
+
+// This function takes the detailed student data and strips it down to the core Student type.
+function getCleanStudentData(student: StudentWithCgpa): Student {
+  const {
+    // These fields are calculated by the AnalysisEngine and are not part of the base data.
+    cgpa,
+    performanceGroup,
+    avgCreditLoad,
+    avgAttendance,
+    semesterDetails,
+    // The rest of the properties are kept.
+    ...rest
+  } = student;
+  return rest;
+}
 
 export function MainPage() {
   const [students, setStudents] = React.useState<StudentWithCgpa[]>([]);
@@ -26,10 +42,7 @@ export function MainPage() {
     setIsLoading(true);
     setParams(params);
     try {
-      // 1. Generate synthetic data (stochastic)
       const generatedStudents = generateSyntheticData(params);
-      
-      // 2. Analyze the data (deterministic)
       const engine = new AnalysisEngine(generatedStudents, params);
       const { data, summary, insights } = engine.run();
 
@@ -88,7 +101,10 @@ export function MainPage() {
       return;
     }
 
-    const dataStr = JSON.stringify(students, null, 2);
+    // Create a clean version of the data for download, removing analysis-specific fields.
+    const cleanStudents = students.map(getCleanStudentData);
+
+    const dataStr = JSON.stringify(cleanStudents, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

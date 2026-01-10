@@ -2,31 +2,37 @@
 import type { StudentWithCgpa, Semester, CreditLoadVsGradeData, AnalysisSummary } from "@/lib/types";
 
 export function getCgpaDistributionData(students: StudentWithCgpa[]) {
-  if (!students || students.length === 0) {
-    return [];
-  }
+  if (!students || students.length === 0) return [];
 
   const bins: Record<string, number> = {};
   const binSize = 0.2;
-
+  
+  // --- BINNING (Python-equivalent: floor, not round) ---
   students.forEach(student => {
-    const adjustedCgpa = student.cgpa >= 4.0 ? 3.99 : student.cgpa;
-    const bin = Math.floor(adjustedCgpa / binSize) * binSize;
+    // cap CGPA just below 4.0 (matches Python)
+    const adjustedCgpa = student.cgpa >= 4.0 ? 3.999999 : student.cgpa;
+  
+    // floor-based binning with FP safety
+    const bin = Math.floor((adjustedCgpa + 1e-9) / binSize) * binSize;
     const binKey = bin.toFixed(2);
-    if (!bins[binKey]) {
-      bins[binKey] = 0;
-    }
-    bins[binKey]++;
+  
+    bins[binKey] = (bins[binKey] || 0) + 1;
   });
-
+  
+  // --- BUILD FULL BIN RANGE (no FP drift) ---
   const data = [];
-  for (let i = 0; i < 4.0; i += binSize) {
-    const binKey = i.toFixed(2);
+  const totalBins = Math.floor(4.0 / binSize);
+  
+  for (let step = 0; step < totalBins; step++) {
+    const binStart = step * binSize;
+    const binKey = binStart.toFixed(2);
+  
     data.push({
-      cgpa: i + binSize / 2,
+      cgpa: Number((binStart + binSize / 2).toFixed(2)), // bin center
       students: bins[binKey] || 0,
     });
   }
+
   return data;
 }
 

@@ -5,13 +5,20 @@ import pandas as pd
 import numpy as np
 import os
 import uuid
+from collections import Counter
 
 # Grade to GPA mapping
 GRADE_TO_GPA = {
-    "A+": 4.0, "A": 4.0, "A-": 3.7,
-    "B+": 3.3, "B": 3.0, "B-": 2.7,
-    "C+": 2.3, "C": 2.0, "C-": 1.7,
-    "D+": 1.3, "D": 1.0, "F": 0.0,
+    'A+': 4.0,
+    'A': 3.75,
+    'A-': 3.5,
+    'B+': 3.25,
+    'B': 3.0,
+    'B-': 2.75,
+    'C+': 2.5,
+    'C': 2.25,
+    'D': 2.0,
+    'F': 0.0,
 }
 
 # Keys that are definitely not course names
@@ -20,41 +27,70 @@ NON_COURSE_KEYS = {
     "gpa", "grade", "score", "semesterName", "semester", "details"
 }
 
-def calculate_semester_gpa(semester_data):
-    """Calculates the GPA for a single semester from its course grades."""
-    total_gpa_points = 0
-    course_count = 0
+def calculate_semester_gpa(semester_data, credits_per_subject=3):
+    total_points = 0
+    total_credits = 0
 
-    # Search for course grades in the semester data or a nested 'details' dict
     search_locations = [semester_data]
     if isinstance(semester_data.get("details"), dict):
         search_locations.append(semester_data["details"])
 
     for loc in search_locations:
         for key, value in loc.items():
-            # A course is assumed to be a key that is not a non-course key and has a valid grade string as a value
             if key not in NON_COURSE_KEYS and isinstance(value, str) and value in GRADE_TO_GPA:
-                total_gpa_points += GRADE_TO_GPA[value]
-                course_count += 1
-        if course_count > 0:  # Prioritize the first location where courses are found
+                total_points += GRADE_TO_GPA[value] * credits_per_subject
+                total_credits += credits_per_subject
+        if total_credits > 0:
             break
-            
-    return total_gpa_points / course_count if course_count > 0 else np.nan
+
+    return total_points / total_credits if total_credits > 0 else np.nan
 
 def process_student_data(students):
     """Processes raw student data to standardize fields and calculate aggregates."""
     for student in students:
-        # --- Standardize Pre-Graduation GPA ---
-        pre_grad_gpa_keys = ['pre_grad_gpa', 'hscGpa', 'hsc_gpa', 'preGradGpa']
-        gpa_val = np.nan
-        for key in pre_grad_gpa_keys:
+        # Ensure each student has a unique ID
+        if 'student_id' in student:
+            student['id'] = student['student_id']
+        elif 'student_id' not in student:
+            student['id'] = str(uuid.uuid4())
+
+        # --- Standardize Pre-Graduation GPA (SSC + HSC) ---
+        ssc_keys = ['ssc_gpa', 'sscGpa', 'sscGPA']
+        hsc_keys = ['hsc_gpa', 'hscGpa', 'hscGPA']
+
+        ssc_gpa = np.nan
+        hsc_gpa = np.nan
+
+        for key in ssc_keys:
             if key in student:
                 try:
-                    gpa_val = float(student[key])
+                    ssc_gpa = float(student[key])
                     break
                 except (ValueError, TypeError):
-                    continue
-        student['pre_grad_gpa'] = gpa_val
+                    pass
+
+        for key in hsc_keys:
+            if key in student:
+                try:
+                    hsc_gpa = float(student[key])
+                    break
+                except (ValueError, TypeError):
+                    pass
+
+        # Weighted pre-graduation GPA (Bangladesh-aware)
+        if not pd.isna(ssc_gpa) and not pd.isna(hsc_gpa):
+            pre_grad_gpa = 0.3 * ssc_gpa + 0.7 * hsc_gpa
+        elif not pd.isna(hsc_gpa):
+            pre_grad_gpa = hsc_gpa
+        elif not pd.isna(ssc_gpa):
+            pre_grad_gpa = ssc_gpa
+        else:
+            pre_grad_gpa = np.nan
+
+        student['ssc_gpa'] = ssc_gpa
+        student['hsc_gpa'] = hsc_gpa
+        student['pre_grad_gpa'] = pre_grad_gpa
+
 
         # --- Standardize Semester Structure (dict to list) ---
         semesters_list = []
@@ -110,13 +146,24 @@ def process_student_data(students):
         
         # Standardize CGPA
         if 'cgpa' not in student or not isinstance(student['cgpa'], (int, float)):
-            student['cgpa'] = np.nan
+            total_points = 0
+            total_credits = 0
+
+            for s in student['semesters']:
+                if pd.notna(s.get('gpa')) and pd.notna(s.get('creditLoad')):
+                    total_points += s['gpa'] * s['creditLoad']
+                    total_credits += s['creditLoad']
+
+            student['cgpa'] = total_points / total_credits if total_credits > 0 else np.nan
+            if pd.notna(student['cgpa']):
+                student['cgpa'] = round(student['cgpa'], 2)
 
     return students
 
 def analyze_data(students_df, plot_points=10):
     """Performs an in-depth analysis of the processed student dataset."""
     summary = {}
+   
 
     # Total students before any filtering
     summary['total_students'] = int(students_df['student_id'].nunique())
@@ -133,18 +180,21 @@ def analyze_data(students_df, plot_points=10):
             'attendance_vs_grade': [],
             'semester_count_distribution': [],
             'credit_distribution': []
-        }, []
+        }, [], []
 
     # CGPA Distribution data
     bins = {}
     bin_size = 0.2
-    for cgpa in students_df['cgpa']:
+    for index, row in students_df.iterrows():
+        cgpa = row['cgpa']
+        student_id = row.get('id', 'N/A') # Use .get for safety
         adjusted_cgpa = 3.99 if cgpa >= 4.0 else cgpa
         if pd.notna(adjusted_cgpa):
             bin_val = np.floor(adjusted_cgpa / bin_size) * bin_size
             bin_key = f"{bin_val:.2f}"
             bins[bin_key] = bins.get(bin_key, 0) + 1
-            
+
+    
     cgpa_dist_data = []
     i = 0.0
     while i < 4.0:
@@ -349,8 +399,13 @@ def main():
     download_filename = f"merged_data_{uuid.uuid4()}.json"
     output_path = os.path.join(output_dir, download_filename)
 
-    students_df.replace({np.nan: None}, inplace=True)
-    final_students_json = students_df.to_dict('records')
+    # --- Clean up DataFrame for final download ---
+    # Ensure 'id' is kept for the final JSON output if it exists
+    final_columns = [col for col in students_df.columns if col not in ['semesters', 'pre_grad_gpa', 'avg_attendance', 'performance_group', 'semester_details']]
+    students_df_cleaned = students_df[final_columns]
+
+    students_df_cleaned.replace({np.nan: None}, inplace=True)
+    final_students_json = students_df_cleaned.to_dict('records')
     
     with open(output_path, 'w') as f:
         json.dump(final_students_json, f, indent=2)

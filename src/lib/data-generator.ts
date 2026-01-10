@@ -2,6 +2,25 @@ import type { GenerationParams, Student, Semester, Grade, PerformanceGroup } fro
 import { DEPARTMENTS, SUBJECTS } from './subjects';
 import { SUBJECT_COUNT } from '@/lib/config';
 
+// Function to get and increment the generation ID from localStorage
+function getNextGenerationId(): number {
+  const key = 'studentDataGenerationId';
+  let currentId = 101; // Start from 101 as a base
+  try {
+    const storedId = localStorage.getItem(key);
+    if (storedId) {
+      currentId = parseInt(storedId, 10);
+    }
+    localStorage.setItem(key, String(currentId + 1));
+  } catch (error) {
+    // In case localStorage is not available (e.g., SSR, privacy settings)
+    console.warn("Could not access localStorage to track generation ID.");
+    // We can return a random high number to reduce collision probability
+    return Math.floor(Math.random() * 1000) + 101;
+  }
+  return currentId;
+}
+
 function generateSubjectPool(department: string): string[] {
     const baseSubjects = SUBJECTS[department];
     const subjectPool: string[] = [];
@@ -81,11 +100,19 @@ function creditImpact(credits: number, params: GenerationParams): number {
 export function generateSyntheticData(params: GenerationParams): Student[] {
   const students: Student[] = [];
   const currentYear = new Date().getFullYear();
-  const maxBirthYear = currentYear - 18;
-  const minBirthYear = maxBirthYear - 7;
-  const totalCreditsRequired = SUBJECT_COUNT * params.creditsPerSubject;
+  const maxBirthYear = currentYear - 30;
+  const minBirthYear = maxBirthYear - 12;
 
-  for (let sid = 1; sid <= params.numStudents; sid++) {
+  // Get the unique generation ID for this batch of students
+  const generationId = getNextGenerationId();
+
+  for (let i = 1; i <= params.numStudents; i++) {
+    // The second part of the ID, unique within this dataset (1 to 5000)
+    const studentInGenerationId = i;
+
+    // Combine the generation ID and the student-specific ID
+    const student_id = (generationId * 10000) + studentInGenerationId;
+
     const performanceGroup = selectPerformanceGroup(params);
     const department = choice(DEPARTMENTS);
     const ssc_gpa = generateGpaInBounds(performanceGroup, 'ssc');
@@ -101,7 +128,6 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     const semesters: Record<string, Semester> = {};
     let semesterId = 1;
     let subjectsToAssign = [...studentSubjectPool];
-    // Assign a floating-point base attendance for more diversity
     const studentBaseAttendance = uniform(60, 98);
 
     while (subjectsToAssign.length > 0) {
@@ -129,7 +155,6 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
           semesterGpa = gpa + creditImpact(actualCredits, params);
       }
       
-      // Add small variance to the base attendance for each semester
       const attendancePercentage = Math.max(0, Math.min(100, studentBaseAttendance + uniform(-2.5, 2.5)));
 
       const semesterData: Semester = {
@@ -163,14 +188,13 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     }
 
     students.push({
-      student_id: 700100000 + sid,
+      student_id: student_id,
       ssc_gpa: ssc_gpa,
       hsc_gpa: hsc_gpa,
       gender: choice(['male', 'female']),
       birth_year: randint(minBirthYear, maxBirthYear),
       department: department,
       semesters: semesters,
-      total_credits_required: totalCreditsRequired,
     });
   }
 

@@ -78,7 +78,6 @@ export default function MergePage() {
       }
 
       const result = await response.json();
-      console.log("Data received from backend:", JSON.stringify(result, null, 2));
       const camelCaseResult = toCamelCase(result);
 
       setParams(camelCaseResult.params || null);
