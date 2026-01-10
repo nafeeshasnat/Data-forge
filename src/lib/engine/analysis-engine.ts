@@ -44,14 +44,29 @@ export class AnalysisEngine {
   private studentsWithCgpa: StudentWithCgpa[];
 
   constructor(students: Student[], params: GenerationParams) {
-    // Ensure every student has a unique ID for deterministic operations.
+    // Ensure every student has a unique numeric student_id for all operations.
     this.students = students.map((student, index) => {
-        if (!student.id) {
-            // If no ID, generate a deterministic one based on student data + index as a fallback.
-            const studentDataString = JSON.stringify(student) + index;
-            return { ...student, id: `gen_${simpleStringHash(studentDataString)}` };
+        const newStudent: Student = { ...student };
+
+        // The primary identifier is student_id (number). Ensure it exists.
+        if (typeof newStudent.student_id !== 'number') {
+            // If an 'id' (string) exists, try to parse it as a number.
+            const parsedId = parseInt(String(newStudent.id), 10);
+            if (newStudent.id && !isNaN(parsedId)) {
+                newStudent.student_id = parsedId;
+            } else {
+                // If no valid numeric ID can be found, generate a deterministic one.
+                const studentDataString = JSON.stringify(student) + index;
+                newStudent.student_id = simpleStringHash(studentDataString);
+            }
         }
-        return student;
+        
+        // Remove the old 'id' property if it exists to avoid confusion
+        if ('id' in newStudent) {
+            delete (newStudent as Partial<Student> & { id?: any }).id;
+        }
+
+        return newStudent;
     });
 
     this.params = params;
@@ -83,16 +98,15 @@ export class AnalysisEngine {
 
     const numToRemove = Math.floor(studentsInRange.length * (percentage / 100));
 
-    // Deterministically shuffle students in the range by sorting based on a hash of their ID.
-    // This ensures a pseudo-random distribution that is repeatable.
-    studentsInRange.sort((a, b) => simpleStringHash(a.id) - simpleStringHash(b.id));
+    // Deterministically shuffle students in the range by sorting based on a hash of their student_id.
+    studentsInRange.sort((a, b) => simpleStringHash(String(a.student_id)) - simpleStringHash(String(b.student_id)));
 
     const trimmedStudentsInRange = studentsInRange.slice(numToRemove);
 
     const newStudentList = [...studentsOutOfRange, ...trimmedStudentsInRange];
     
-    // Sort the final list by student ID for consistent order in the UI.
-    newStudentList.sort((a, b) => a.id.localeCompare(b.id));
+    // Sort the final list by student_id for consistent order in the UI.
+    newStudentList.sort((a, b) => a.student_id - b.student_id);
 
     return newStudentList;
   }
@@ -160,30 +174,33 @@ export class AnalysisEngine {
     let semesterCount = 0;
 
     for (const semesterId in student.semesters) {
-      const semester = student.semesters[semesterId];
-      let semesterSubjectsGradePoints = 0;
-      let semesterSubjectCredits = 0;
-      
-      if (Object.keys(semester).length > 1) { // check if there's more than just creditHours/attendance
-          semesterCount++;
-          totalAttendance += semester.attendancePercentage || 0;
-      }
+        const semester = student.semesters[semesterId];
+        let semesterSubjectsGradePoints = 0;
+        let semesterSubjectCredits = 0;
 
-      for (const subject in semester) {
-        if (subject !== 'creditHours' && subject !== 'attendancePercentage') {
-          const grade = semester[subject] as keyof typeof GRADE_SCALE;
-          semesterSubjectsGradePoints += (GRADE_SCALE[grade] || 0) * this.params.creditsPerSubject;
-          semesterSubjectCredits += this.params.creditsPerSubject;
+        if (Object.keys(semester).length > 1) {
+            semesterCount++;
+            totalAttendance += semester.attendancePercentage || 0;
         }
-      }
 
-      if (semesterSubjectCredits > 0) {
-        totalGradePoints += semesterSubjectsGradePoints;
-        totalCredits += semesterSubjectCredits;
-      }
+        for (const subject in semester) {
+            if (subject !== 'creditHours' && subject !== 'attendancePercentage') {
+                const grade = semester[subject] as keyof typeof GRADE_SCALE;
+                semesterSubjectsGradePoints += (GRADE_SCALE[grade] || 0) * this.params.creditsPerSubject;
+                semesterSubjectCredits += this.params.creditsPerSubject;
+            }
+        }
+
+        if (semesterSubjectCredits > 0) {
+            totalGradePoints += semesterSubjectsGradePoints;
+            totalCredits += semesterSubjectCredits;
+        }
     }
 
-    const cgpa = totalCredits > 0 ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0;
+    // ✅ Only round final CGPA, after summing all semesters
+    const rawCgpa = totalCredits > 0 ? totalGradePoints / totalCredits : 0;
+    const cgpa = Number(rawCgpa.toFixed(2));
+
     const avgCreditLoad = semesterCount > 0 ? totalCredits / semesterCount : 0;
     const avgAttendance = semesterCount > 0 ? totalAttendance / semesterCount : 0;
 
@@ -196,30 +213,31 @@ export class AnalysisEngine {
     };
   }
 
-  private addSemesterDetails(student: StudentWithCgpa): StudentWithSemesterDetails {
-    const semesterDetails = Object.values(student.semesters).map(semester => {
-        let semesterGradePoints = 0;
-        let semesterCredits = 0;
-
-        for (const subject in semester) {
-            if (subject !== 'creditHours' && subject !== 'attendancePercentage') {
-                const grade = semester[subject] as keyof typeof GRADE_SCALE;
-                semesterGradePoints += (GRADE_SCALE[grade] || 0) * this.params.creditsPerSubject;
-                semesterCredits += this.params.creditsPerSubject;
-            }
-        }
-
-        const semesterGpa = semesterCredits > 0 ? parseFloat((semesterGradePoints / semesterCredits).toFixed(2)) : 0;
-        return {
-            gpa: semesterGpa,
-            creditLoad: semesterCredits,
-        };
-    });
-
-    return {
-        ...student,
-        semesterDetails,
-    };
+    private addSemesterDetails(student: StudentWithCgpa): StudentWithSemesterDetails {
+      const semesterDetails = Object.values(student.semesters).map(semester => {
+          let semesterGradePoints = 0;
+          let semesterCredits = 0;
+  
+          for (const subject in semester) {
+              if (subject !== 'creditHours' && subject !== 'attendancePercentage') {
+                  const grade = semester[subject] as keyof typeof GRADE_SCALE;
+                  semesterGradePoints += (GRADE_SCALE[grade] || 0) * this.params.creditsPerSubject;
+                  semesterCredits += this.params.creditsPerSubject;
+              }
+          }
+  
+          // ✅ Do not round semester GPA
+          const semesterGpa = semesterCredits > 0 ? semesterGradePoints / semesterCredits : 0;
+          return {
+              gpa: semesterGpa,
+              creditLoad: semesterCredits,
+          };
+      });
+  
+      return {
+          ...student,
+          semesterDetails,
+      };
   }
 
   /**

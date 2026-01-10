@@ -13,18 +13,18 @@ import {
 } from "@/components/ui/card";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-        const binSize = 0.2;
-        const binStart = Math.max(0, label - binSize / 2).toFixed(2);
-        const binEnd = Math.min(4, label + binSize / 2).toFixed(2);
-        return (
-            <div className="rounded-lg border bg-background p-2 shadow-sm">
-                <p className="text-sm font-bold">CGPA Range: {binStart} - {binEnd}</p>
-                <p className="text-sm text-muted-foreground">Students: {payload[0].value}</p>
-            </div>
-        );
-    }
-    return null;
+  if (active && payload && payload.length) {
+    const binSize = 0.2;
+    const binStart = Number((label - binSize / 2).toFixed(2));
+    const binEnd = Number((label + binSize / 2).toFixed(2));
+    return (
+      <div className="rounded-lg border bg-background p-2 shadow-sm">
+        <p className="text-sm font-bold">CGPA Range: {binStart} - {binEnd}</p>
+        <p className="text-sm text-muted-foreground">Students: {payload[0].value}</p>
+      </div>
+    );
+  }
+  return null;
 };
 
 interface CgpaDistributionChartProps {

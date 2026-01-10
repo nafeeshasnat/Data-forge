@@ -1,60 +1,37 @@
-export interface Student {
-  id: string;
-  name: string;
-  department: string;
-  cgpa?: number;
-  pre_grad_gpa?: number;
-  semesters?: Record<string, any> | any[];
-  semesterDetails?: any[]; 
-  avg_attendance?: number;
-}
+export type Grade = "A+" | "A" | "A-" | "B+" | "B" | "B-" | "C+" | "C" | "D" | "F";
 
-export interface StudentWithCgpa extends Student {
-  cgpa: number;
-}
+export type Semester = {
+    creditHours: number;
+    attendancePercentage: number;
+    [subject: string]: Grade | number; 
+};
 
-export interface Semester {
-  semesterName: string;
-  creditHours: number;
-  attendancePercentage: number;
-  gpa: number;
-  [key: string]: any; 
-}
+export type Student = {
+    student_id: number;
+    ssc_gpa: number;
+    hsc_gpa: number;
+    gender: 'male' | 'female';
+    birth_year: number;
+    department: string;
+    semesters: Record<string, Semester>;
+};
 
-export interface GenerationParams {
-  stdCredit: number;
-  maxCreditImpact: number;
-  creditsPerSubject?: number;
-}
+export type StudentWithCgpa = Student & {
+    cgpa: number;
+};
+  
+export type GenerationParams = {
+    numStudents: number;
+    highPerformanceChance: number;
+    lowPerformanceChance: number;
+    exceptionPercentage: number;
+    attendanceImpact: number;
+    preGradScoreInfluence: number;
+    creditsPerSubject: number;
+    minCredit: number;
+    maxCredit: number;
+    stdCredit: number;
+    maxCreditImpact: number;
+};
 
-export interface CgpaDistributionData {
-  cgpa: number;
-  students: number;
-}
-
-export interface HscVsCgpaDensityData {
-  preGpa: number;
-  uniCgpa: number;
-  count: number;
-  z: number;
-}
-
-export interface CreditLoadVsGradeData {
-  creditLoad: number;
-  avgGpa: number;
-}
-
-export interface AnalysisSummary {
-  totalStudents: number;
-  avgCgpa?: number;
-  medianCgpa?: number;
-  cgpaDistribution: CgpaDistributionData[];
-  departmentDistribution: Record<string, number>;
-  performance_distribution: Record<string, number>; 
-  hscVsCgpaDensity: HscVsCgpaDensityData[];
-  creditLoadVsGrade: CreditLoadVsGradeData[];
-  topPerformers?: Student[];
-  lowPerformers?: Student[];
-  avgAttendance?: number;
-  lowAttendanceStudents?: Student[];
-}
+export type PerformanceGroup = 'High' | 'Mid' | 'Low';
