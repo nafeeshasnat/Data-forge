@@ -9,15 +9,23 @@ import { useToast } from '@/hooks/use-toast';
 
 interface MergeSidebarProps {
     onMerge: () => void;
-    onDownload: () => void;
     onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     onJsonToText: (file: File) => void;
     onTrim: (minCgpa: number, maxCgpa: number, percentage: number) => void; 
     mergedStudentsCount: number;
+    downloadPath: string | null;
     isLoading?: boolean;
 }
 
-export function MergeSidebar({ onMerge, onDownload, onFileChange, onJsonToText, onTrim, mergedStudentsCount, isLoading = false }: MergeSidebarProps) {
+export function MergeSidebar({ 
+    onMerge, 
+    onFileChange, 
+    onJsonToText, 
+    onTrim, 
+    mergedStudentsCount, 
+    downloadPath,
+    isLoading = false 
+}: MergeSidebarProps) {
     const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
     const { toast } = useToast();
 
@@ -79,10 +87,16 @@ export function MergeSidebar({ onMerge, onDownload, onFileChange, onJsonToText, 
                     <CardDescription>Download the merged dataset as a single JSON file.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Button onClick={onDownload} className="w-full" disabled={isLoading || mergedStudentsCount === 0}>
-                        Download as JSON
+                    <Button asChild disabled={isLoading || !downloadPath} className="w-full">
+                        <a href={downloadPath || undefined} download="merged_dataset.json">
+                            Download as JSON
+                        </a>
                     </Button>
-                    <p className="text-sm text-muted-foreground mt-2">{mergedStudentsCount} students in the current merged dataset.</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                        {mergedStudentsCount > 0
+                            ? `${mergedStudentsCount} students processed.`
+                            : "Merge datasets to enable download."}
+                    </p>
                 </CardContent>
             </Card>
         </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import type { Student, GenerationParams, AnalysisSummary, StudentWithCgpa } from '@/lib/types';
+import type { GenerationParams, AnalysisSummary } from '@/lib/types';
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { MergeSidebar } from '@/components/app/merge-sidebar';
 import { useToast } from '@/hooks/use-toast';
@@ -29,10 +29,10 @@ const toCamelCase = (obj: any): any => {
 
 export default function MergePage() {
   const [files, setFiles] = useState<FileList | null>(null);
-  const [mergedStudents, setMergedStudents] = useState<StudentWithCgpa[]>([]);
   const [summary, setSummary] = useState<AnalysisSummary | null>(null);
   const [insights, setInsights] = useState<string[]>([]);
   const [params, setParams] = useState<GenerationParams | null>(null);
+  const [downloadPath, setDownloadPath] = useState<string | null>(null);
   const [plainText, setPlainText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [plotPoints, setPlotPoints] = useState<number>(80);
@@ -54,6 +54,11 @@ export default function MergePage() {
     }
 
     setIsLoading(true);
+    setSummary(null);
+    setInsights([]);
+    setDownloadPath(null);
+    setPlainText('');
+
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
@@ -73,22 +78,13 @@ export default function MergePage() {
       }
 
       const result = await response.json();
+      console.log("Data received from backend:", JSON.stringify(result, null, 2));
       const camelCaseResult = toCamelCase(result);
 
-      const dataSize = JSON.stringify(camelCaseResult).length;
-      console.log("Data received from backend:", camelCaseResult);
-      console.log("Size of the received data (in bytes):", dataSize);
-
-      // Add totalStudents to the summary
-      if (camelCaseResult.summary) {
-        camelCaseResult.summary.totalStudents = camelCaseResult.students.length;
-      }
-      
       setParams(camelCaseResult.params || null);
       setSummary(camelCaseResult.summary || null);
-      setMergedStudents(camelCaseResult.students || []);
       setInsights(camelCaseResult.insights || []);
-      setPlainText(''); // Clear plain text view
+      setDownloadPath(camelCaseResult.downloadPath || null);
 
       toast({
         title: "Merge Successful",
@@ -98,7 +94,7 @@ export default function MergePage() {
         console.error("An error occurred during merge:", error);
         toast({
             variant: "destructive",
-            title: "An error occurred during merge: Error: Failed to merge files: ",
+            title: "An error occurred during merge",
             description: (error as Error).message,
         });
     } finally {
@@ -133,10 +129,10 @@ export default function MergePage() {
 
       const result = await response.text();
       setPlainText(result);
-      setMergedStudents([]); // Clear merge view
       setSummary(null);
       setInsights([]);
       setParams(null);
+      setDownloadPath(null);
 
       toast({
         title: "Conversion Successful",
@@ -152,38 +148,6 @@ export default function MergePage() {
     } finally {
         setIsLoading(false);
     }
-  };
-
-  const handleDownload = () => {
-    if (mergedStudents.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "No data to download",
-        description: "Please merge some datasets first.",
-      });
-      return;
-    }
-
-    const dataToDownload = {
-      params: params,
-      summary: summary,
-      insights: insights,
-      students: mergedStudents
-    };
-
-    const blob = new Blob([JSON.stringify(dataToDownload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'merged_dataset.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast({
-      title: "Download Started",
-      description: "Your merged dataset is being downloaded.",
-    });
   };
 
   const handleTrim = (minCgpa: number, maxCgpa: number, percentage: number) => {
@@ -203,11 +167,11 @@ export default function MergePage() {
       <aside className="w-96 h-full overflow-y-auto border-r">
         <MergeSidebar 
             onMerge={handleMerge} 
-            onDownload={handleDownload} 
             onFileChange={handleFileChange}
             onJsonToText={handleJsonToText}
             onTrim={handleTrim}
-            mergedStudentsCount={mergedStudents ? mergedStudents.length : 0} 
+            mergedStudentsCount={summary?.totalStudents || 0}
+            downloadPath={downloadPath}
             isLoading={isLoading}
         />
       </aside>
@@ -229,8 +193,8 @@ export default function MergePage() {
               <Textarea value={plainText} readOnly rows={20} className="w-full p-2 font-mono" />
             </CardContent>
           </Card>
-        ) : (mergedStudents && mergedStudents.length > 0 && summary) ? (
-            <AcademicPerformance students={mergedStudents} summary={summary} params={params} insights={insights} isMergePage={true} />
+        ) : summary ? (
+            <AcademicPerformance students={[]} summary={summary} params={params} insights={insights} isMergePage={true} />
         ) : (
             <div className="flex items-center justify-center h-full text-center p-8 border rounded-lg bg-card">
                 <div>

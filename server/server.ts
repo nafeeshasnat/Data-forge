@@ -39,50 +39,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 // --- End Multer Setup ---
 
-// API endpoint for testing python
-app.get('/api/test-python', (req, res) => {
-    console.log("[API /api/test-python] Received request to test python execution.");
-
-    const pythonProcess = spawn(pythonCommand, ['--version']);
-
-    let stdout = '';
-    let stderr = '';
-
-    pythonProcess.stdout.on('data', (data) => {
-        stdout += data.toString();
-    });
-
-    pythonProcess.stderr.on('data', (data) => {
-        stderr += data.toString();
-    });
-
-    pythonProcess.on('close', (code) => {
-        console.log(`[API /api/test-python] Python process finished with code ${code}`);
-        if (code !== 0) {
-            res.status(500).json({
-                message: 'Python execution test failed.',
-                stdout: stdout,
-                stderr: stderr,
-            });
-        } else {
-            res.json({
-                message: 'Python execution test successful.',
-                stdout: stdout,
-                stderr: stderr,
-            });
-        }
-    });
-
-    pythonProcess.on('error', (error) => {
-        console.error("[API /api/test-python] Failed to start python process:", error);
-        res.status(500).json({
-            message: `Failed to start python process with command '${pythonCommand}'. Is python installed at this location?`,
-            error: error,
-        });
-    });
-});
-
-
 // API endpoint for merge and analyze
 app.post('/api/merge', upload.array('files'), (req, res) => {
     console.log("[API /api/merge] Received request to merge files.");
@@ -131,6 +87,8 @@ app.post('/api/merge', upload.array('files'), (req, res) => {
 
         try {
             const result = JSON.parse(stdout);
+            // Add the download path to the response
+            result.downloadPath = `/api/download/${result.downloadFilename}`;
             console.log("[API /api/merge] Merge and analysis successful, sending response.");
             res.json(result);
         } catch (parseError) {
@@ -144,6 +102,33 @@ app.post('/api/merge', upload.array('files'), (req, res) => {
         res.status(500).json({ error: 'Failed to start analysis process'});
     });
 });
+
+// API endpoint for downloading merged files
+app.get('/api/download/:filename', (req, res) => {
+    const { filename } = req.params;
+    console.log(`[API /api/download] Received request to download file: ${filename}`);
+    const filePath = path.join(tmpDir, filename);
+
+    if (fs.existsSync(filePath)) {
+        console.log(`[API /api/download] File found. Sending file: ${filePath}`);
+        res.download(filePath, (err) => {
+            if (err) {
+                console.error(`[API /api/download] Error sending file:`, err);
+                res.status(500).send({ error: 'Could not download the file.' });
+            }
+            // Clean up the file after download is complete
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) {
+                    console.error(`[API /api/download] Failed to cleanup file ${filePath}:`, unlinkErr);
+                }
+            });
+        });
+    } else {
+        console.log(`[API /api/download] File not found: ${filePath}`);
+        res.status(404).send({ error: 'File not found.' });
+    }
+});
+
 
 // API endpoint for JSON to text conversion
 app.post('/api/json-to-text', upload.single('file'), (req, res) => {

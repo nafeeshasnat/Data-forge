@@ -3,6 +3,8 @@ import json
 import sys
 import pandas as pd
 import numpy as np
+import os
+import uuid
 
 # Grade to GPA mapping
 GRADE_TO_GPA = {
@@ -115,6 +117,9 @@ def process_student_data(students):
 def analyze_data(students_df, plot_points=10):
     """Performs an in-depth analysis of the processed student dataset."""
     summary = {}
+
+    # Total students before any filtering
+    summary['total_students'] = int(students_df['student_id'].nunique())
 
     # Drop students with NaN CGPA for accurate analysis
     students_df.dropna(subset=['cgpa'], inplace=True)
@@ -261,23 +266,16 @@ def analyze_data(students_df, plot_points=10):
     # General Statistics
     summary['avg_cgpa'] = students_df['cgpa'].mean()
     summary['median_cgpa'] = students_df['cgpa'].median()
-    summary['top_performers'] = students_df.nlargest(5, 'cgpa').to_dict('records')
-    summary['low_performers'] = students_df.nsmallest(5, 'cgpa').to_dict('records')
 
     # Attendance Analysis
     attendance_df = students_df.dropna(subset=['avg_attendance'])
-    low_attendance_threshold = 75
     summary['avg_attendance'] = attendance_df['avg_attendance'].mean() if not attendance_df.empty else 0
-    summary['low_attendance_students'] = attendance_df[attendance_df['avg_attendance'] < low_attendance_threshold].to_dict('records')
 
     # Insights
     insights = []
     if not pd.isna(summary.get('avg_cgpa')) and summary['avg_cgpa'] < 2.8:
         insights.append(f"The average CGPA of {summary['avg_cgpa']:.2f} is concerning.")
-    if len(summary.get('low_performers', [])) > 0:
-        insights.append(f"{len(summary['low_performers'])} students may need academic support.")
-    if len(summary.get('low_attendance_students', [])) > 0:
-        insights.append(f"{len(summary['low_attendance_students'])} students have low attendance, which may affect their performance.")
+    
     if not insights:
         insights.append("The dataset appears healthy overall.")
 
@@ -326,7 +324,7 @@ def main():
     processed_students = process_student_data(all_students)
     students_df = pd.DataFrame(processed_students)
     
-    summary, insights = analyze_data(students_df, plot_points=plot_points)
+    summary, insights = analyze_data(students_df.copy(), plot_points=plot_points)
 
     def convert_numpy_types(obj):
         if isinstance(obj, dict):
@@ -345,14 +343,28 @@ def main():
 
     summary = convert_numpy_types(summary)
     
+    # --- Save full dataset to a temporary file ---
+    output_dir = "tmp"
+    os.makedirs(output_dir, exist_ok=True)
+    download_filename = f"merged_data_{uuid.uuid4()}.json"
+    output_path = os.path.join(output_dir, download_filename)
+
     students_df.replace({np.nan: None}, inplace=True)
-    students_json = students_df.to_dict('records')
+    final_students_json = students_df.to_dict('records')
+    
+    with open(output_path, 'w') as f:
+        json.dump(final_students_json, f, indent=2)
+    # ---------------------------------------------
 
     result = {
         "summary": summary,
         "insights": insights,
-        "students": students_json,
-        "params": {"std_credit": 18, "max_credit_impact": 0.15}
+        "downloadFilename": download_filename,
+        "params": {
+            "std_credit": 18, 
+            "max_credit_impact": 0.15,
+            "plot_points": plot_points
+        }
     }
     print(json.dumps(result, indent=2))
 
