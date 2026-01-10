@@ -115,8 +115,8 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
 
     const performanceGroup = selectPerformanceGroup(params);
     const department = choice(DEPARTMENTS);
-    const ssc_gpa = generateGpaInBounds(performanceGroup, 'ssc');
-    const hsc_gpa = generateGpaInBounds(performanceGroup, 'hsc');
+    const ssc_gpa = parseFloat(generateGpaInBounds(performanceGroup, 'ssc').toFixed(2));
+    const hsc_gpa = parseFloat(generateGpaInBounds(performanceGroup, 'hsc').toFixed(2));
     
     const preGradUniGpa = ((ssc_gpa / 5.0) + (hsc_gpa / 5.0)) / 2 * 4.0;
 
@@ -155,7 +155,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
           semesterGpa = gpa + creditImpact(actualCredits, params);
       }
       
-      const attendancePercentage = Math.max(0, Math.min(100, studentBaseAttendance + uniform(-2.5, 2.5)));
+      const attendancePercentage = Math.round(Math.max(0, Math.min(100, studentBaseAttendance + uniform(-2.5, 2.5))));
 
       const semesterData: Semester = {
         creditHours: actualCredits,
