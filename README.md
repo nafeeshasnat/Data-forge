@@ -1,14 +1,17 @@
 # DataForge AI
 
-DataForge AI is a Vite + React application for generating, analyzing, trimming, and merging synthetic student datasets. It combines an in-browser data generation and analysis engine with optional Python-powered workflows for heavier dataset processing.
+DataForge AI is a Vite + React application for generating, analyzing, trimming, and merging synthetic student datasets. It combines an in-browser data generation and analysis engine with optional Python-powered workflows for heavier dataset processing, plus a UI for generating a single student profile.
 
 ## Key Features
 
 - **Synthetic data generation** with adjustable population size, performance mix, credit load, attendance impact, and more.
+- **Single student generator UI** with per-semester controls for credits and attendance.
 - **Deterministic analysis engine** that produces summary statistics, performance grouping, and data prepared for charts.
 - **Interactive dashboard** with CGPA distributions, department mix, HSC vs CGPA, credit load effects, attendance impact, semester counts, and more.
 - **Dataset trimming** by CGPA range (client-side in the main generator; server-side via Python on the trim page).
 - **Dataset merging** and re-analysis via Python scripts and an Express API.
+- **Configurable grade scale** (letter-grade to point mapping) via UI inputs or JSON upload.
+- **Analysis-only performance thresholds** (High/Mid/Low cutoffs) configurable without changing generation.
 - **Downloadable JSON** datasets stripped of analysis-only fields.
 
 ## Tech Stack
@@ -63,7 +66,7 @@ npm run start
 
 ```
 src/
-  app/                       # Route-level pages (/, /merge, /trim)
+  app/                       # Route-level pages (/, /merge, /trim, /single)
   components/
     app/                     # App-specific UI (charts, dashboard, sidebar)
     ui/                      # shadcn/ui components
@@ -73,6 +76,7 @@ src/
     engine/analysis-engine.ts # Deterministic analysis + trimming
     chart-data-utils.ts      # Chart data helpers
     config.ts                # Default parameters
+    schemas.ts               # Zod schemas for datasets and grade scales
     subjects.ts              # Department + subject pools
     types.ts                 # TypeScript types
   scripts/                   # Python helpers for merge/trim
@@ -81,11 +85,13 @@ server/
 docs/
   blueprint.md               # High-level product blueprint
 student_dataset.json         # Sample dataset
+grade-scale.default.json     # Default letter-grade scale configuration
 ```
 
 ## Routes
 
 - `/` (Main generator): parameter controls, dataset generation, dashboard, and client-side trim/download.
+- `/single`: generate a single student (UI-only) with performance group and per-semester controls.
 - `/merge`: upload multiple JSON datasets, run Python merge + analysis, download merged output.
 - `/trim`: upload a JSON dataset, trim by CGPA range on the server, re-analyze, download output.
 
@@ -134,6 +140,8 @@ Defined in `src/components/app/parameter-sidebar.tsx` and used by `src/lib/data-
 - `preGradScoreInfluence`: weight of SSC/HSC GPA on university GPA
 - `exceptionPercentage`: chance of exceptional performance swings
 - `attendanceImpact`: attendance effect on GPA
+- `gradeScale`: letter grade to point mapping (optional; defaults to `grade-scale.default.json`)
+- `analysisPerformanceThresholds`: analysis-only High/Mid cutoffs for performance grouping
 
 ## Analysis Engine
 
@@ -149,6 +157,7 @@ Defined in `src/components/app/parameter-sidebar.tsx` and used by `src/lib/data-
 
 ```text
 UI (Generate) --> data-generator.ts --> analysis-engine.ts --> Dashboard + Download
+UI (Single) --> data-generator.ts (single student) --> Download
 UI (Merge) ----> /api/merge ---------> merge_and_analyze.py --> Summary + Download
 UI (Trim) -----> /api/upload + /api/trim -> trim_and_analyze.py -> Summary + Download
 ```
@@ -161,6 +170,7 @@ Defined in `server/server.ts` (used by the `/merge` page):
 - `GET /api/download/:filename`: download merged output stored in the `tmp` directory
 - `POST /api/upload`: upload a dataset for trimming
 - `POST /api/trim`: trim and analyze a dataset via `src/scripts/trim_and_analyze.py`
+- `POST /api/json-to-text`: convert a JSON dataset to plain text
 
 ## Python Scripts
 
@@ -168,8 +178,10 @@ Located in `src/scripts`:
 
 - `merge_and_analyze.py`: merges datasets, normalizes schema, computes summaries and chart-ready aggregates
 - `trim_and_analyze.py`: trims a dataset by CGPA range and re-analyzes, writing a new JSON file to `tmp`
+- `json_to_text.py`: converts a dataset to a readable text format
 
 ## Notes
 
 - `server/server.js` appears to be an outdated/invalid build artifact and is not used by the TypeScript server.
 - `student_dataset.json` is a sample output dataset for testing.
+- Optional analysis thresholds from UI (does not affect generation)

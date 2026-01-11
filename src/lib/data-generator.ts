@@ -8,6 +8,14 @@ import { SUBJECT_COUNT, defaultGradeScale } from '@/lib/config';
 // 3) For each semester, compute GPA, apply attendance + credit impacts, then assign letter grades.
 // 4) Emit student records with semester data and metadata.
 
+export type SingleStudentOptions = {
+  performanceGroup: PerformanceGroup;
+  semesterCount: number;
+  averageCredits: number;
+  attendanceImpact?: number;
+  maxCreditImpact?: number;
+};
+
 // Generates a stable, incrementing ID to reduce collisions across batches.
 function getNextGenerationId(): number {
   const key = 'studentDataGenerationId';
@@ -100,6 +108,28 @@ function creditImpact(credits: number, params: GenerationParams): number {
   const deviation = (credits - stdCredit) / (maxCredit - stdCredit);
   const impact = -Math.pow(deviation, 1.5) * maxCreditImpact / 2.0;
   return impact;
+}
+
+export function buildCreditPlan(
+  semesterCount: number,
+  averageCredits: number,
+  minCredit: number,
+  maxCredit: number
+): number[] {
+  const totalCredits = Math.round(averageCredits * semesterCount);
+  const plan: number[] = [];
+  let remaining = totalCredits;
+  for (let i = 0; i < semesterCount; i += 1) {
+    const semestersLeft = semesterCount - i;
+    const minForRemaining = (semestersLeft - 1) * minCredit;
+    const maxForRemaining = (semestersLeft - 1) * maxCredit;
+    const minAllowed = Math.max(minCredit, remaining - maxForRemaining);
+    const maxAllowed = Math.min(maxCredit, remaining - minForRemaining);
+    const nextCredits = semestersLeft === 1 ? remaining : randint(minAllowed, maxAllowed);
+    plan.push(nextCredits);
+    remaining -= nextCredits;
+  }
+  return plan;
 }
 
 export function generateSyntheticData(params: GenerationParams): Student[] {
@@ -221,4 +251,119 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
   }
 
   return students;
+}
+
+export function generateSingleStudent(
+  params: GenerationParams,
+  options: SingleStudentOptions
+): { student: Student; semesterSummaries: Array<{ creditHours: number; attendancePercentage: number; gpa: number }> } {
+  const gradeScale = params.gradeScale ?? defaultGradeScale;
+  const gradeScaleTuples = Object.entries(gradeScale)
+    .map(([grade, value]) => [grade as Grade, value] as [Grade, number])
+    .sort((a, b) => b[1] - a[1]);
+  const normalizedGradeScaleTuples = gradeScaleTuples.length ? gradeScaleTuples : DEFAULT_GRADE_SCALE_TUPLES;
+  const currentYear = new Date().getFullYear();
+  const maxBirthYear = currentYear - 30;
+  const minBirthYear = maxBirthYear - 12;
+
+  const generationId = getNextGenerationId();
+  const student_id = (generationId * 10000) + 1;
+  const department = choice(DEPARTMENTS);
+  const ssc_gpa = parseFloat(generateGpaInBounds(options.performanceGroup, 'ssc').toFixed(2));
+  const hsc_gpa = parseFloat(generateGpaInBounds(options.performanceGroup, 'hsc').toFixed(2));
+  const preGradUniGpa = ((ssc_gpa / 5.0) + (hsc_gpa / 5.0)) / 2 * 4.0;
+  const isPerfectScorer = options.performanceGroup === 'High' && preGradUniGpa > 3.8 && Math.random() < 0.8;
+
+  const fullSubjectPool = generateSubjectPool(department);
+  const studentSubjectPool = shuffle([...fullSubjectPool]).slice(0, SUBJECT_COUNT);
+  const creditPlan = buildCreditPlan(options.semesterCount, options.averageCredits, params.minCredit, params.maxCredit);
+
+  const semesters: Record<string, Semester> = {};
+  const semesterSummaries: Array<{ creditHours: number; attendancePercentage: number; gpa: number }> = [];
+  let subjectsToAssign = [...studentSubjectPool];
+  const studentBaseAttendance = uniform(60, 98);
+  let prevAccumulatedGpa = 0.0;
+
+  for (let semesterIndex = 0; semesterIndex < creditPlan.length; semesterIndex += 1) {
+    if (subjectsToAssign.length === 0) break;
+    const requestedCredits = creditPlan[semesterIndex];
+    const subjectCount = Math.min(
+      Math.ceil(requestedCredits / params.creditsPerSubject),
+      subjectsToAssign.length
+    );
+    const actualCredits = subjectCount * params.creditsPerSubject;
+    const semesterSubjects = subjectsToAssign.splice(0, subjectCount);
+
+    const semesterId = semesterIndex + 1;
+    const preGradDecay = params.preGradDecay ?? 0.9;
+    const w_preGrad = Math.pow(preGradDecay, semesterId - 1);
+    const w_accum = 1 - w_preGrad;
+
+    let semesterGpa: number;
+    const attendancePercentage = Math.round(
+      Math.max(0, Math.min(100, studentBaseAttendance + uniform(-2.5, 2.5)))
+    );
+
+    if (isPerfectScorer) {
+      semesterGpa = 4.0;
+    } else {
+      let baseGpa = preGradUniGpa * w_preGrad + prevAccumulatedGpa * w_accum;
+      baseGpa += uniform(-0.2, 0.2);
+
+      if (options.performanceGroup !== 'High' && Math.random() < params.exceptionPercentage) {
+        const exceptionalSwing = 0.35;
+        baseGpa += getExceptionalPerformanceGroup(options.performanceGroup) === 'High' ? exceptionalSwing : -exceptionalSwing;
+      }
+
+      if (options.performanceGroup === 'High') {
+        const perfectScorePush = (preGradUniGpa / 4.0) * params.preGradScoreInfluence;
+        baseGpa = baseGpa * (1 - perfectScorePush) + 4.0 * perfectScorePush;
+      }
+
+      const effectiveParams: GenerationParams = {
+        ...params,
+        attendanceImpact: options.attendanceImpact ?? params.attendanceImpact,
+        maxCreditImpact: options.maxCreditImpact ?? params.maxCreditImpact,
+      };
+
+      semesterGpa = baseGpa + creditImpact(actualCredits, effectiveParams);
+      const attendanceImpact = (attendancePercentage - 82.5) / 17.5 * effectiveParams.attendanceImpact;
+      semesterGpa += attendanceImpact;
+      semesterGpa = Math.max(0.0, Math.min(4.0, semesterGpa));
+    }
+
+    prevAccumulatedGpa = ((prevAccumulatedGpa * semesterIndex) + semesterGpa) / semesterId;
+
+    const semesterData: Semester = {
+      creditHours: actualCredits,
+      attendancePercentage: attendancePercentage,
+    };
+
+    for (const subject of semesterSubjects) {
+      const finalGpaForSubject = isPerfectScorer
+        ? 4.0
+        : Math.max(0, Math.min(4.0, semesterGpa + uniform(-0.1, 0.1)));
+      semesterData[subject] = gpaToGrade(finalGpaForSubject, normalizedGradeScaleTuples);
+    }
+
+    semesters[String(semesterId)] = semesterData;
+    semesterSummaries.push({
+      creditHours: actualCredits,
+      attendancePercentage,
+      gpa: Number(semesterGpa.toFixed(2)),
+    });
+  }
+
+  return {
+    student: {
+      student_id,
+      ssc_gpa,
+      hsc_gpa,
+      gender: choice(['male', 'female']),
+      birth_year: randint(minBirthYear, maxBirthYear),
+      department,
+      semesters,
+    },
+    semesterSummaries,
+  };
 }
