@@ -84,8 +84,8 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
     if (isMergePage) {
         return summary.creditLoadVsGrade || [];
     }
-    return computeCreditLoadVsGradeData(students);
-  }, [students, summary, isMergePage]);
+    return computeCreditLoadVsGradeData(students, params?.gradeScale);
+  }, [students, summary, isMergePage, params]);
 
   const attendanceVsGradeData: AttendanceVsGradeData[] = useMemo(() => {
     if (isMergePage) {

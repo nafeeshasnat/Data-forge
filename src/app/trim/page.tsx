@@ -2,13 +2,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Bar, BarChart, Pie, PieChart as RechartsPieChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import type { AnalysisSummary } from '@/lib/types';
+ 
+import type { AnalysisSummary, GenerationParams } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Logo } from "@/components/app/logo";
 import { Link, useLocation } from "react-router-dom";
@@ -18,12 +17,8 @@ import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 import "@/components/app/slider-styles.css";
 import { StudentDatasetSchema } from "@/lib/schemas";
-
-const chartConfig = {
-  value: {
-    label: "Students",
-  },
-} satisfies ChartConfig;
+import { AcademicPerformance } from "@/components/app/academic-performance";
+import { performanceThresholds } from "@/lib/config";
 
 export default function TrimPage() {
   const location = useLocation();
@@ -31,8 +26,17 @@ export default function TrimPage() {
   const [minCgpa, setMinCgpa] = useState<number>(2.5);
   const [maxCgpa, setMaxCgpa] = useState<number>(3.5);
   const [percentage, setPercentage] = useState<number>(10);
+  const [analysisThresholds, setAnalysisThresholds] = useState({
+    high: performanceThresholds.high,
+    mid: performanceThresholds.mid,
+  });
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [analysis, setAnalysis] = useState<{ summary: AnalysisSummary; insights: string[], downloadFilename?: string } | null>(null);
+  const [analysis, setAnalysis] = useState<{
+    summary: AnalysisSummary;
+    insights: string[];
+    downloadFilename?: string;
+    params?: GenerationParams;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,6 +66,78 @@ export default function TrimPage() {
     setFile(selectedFile);
     setAnalysis(null);
     setError(null);
+    await handleAnalyze(selectedFile);
+  };
+
+  const toCamelCase = (obj: any): any => {
+    if (Array.isArray(obj)) {
+      return obj.map((value) => toCamelCase(value));
+    }
+    if (obj !== null && obj.constructor === Object) {
+      return Object.keys(obj).reduce((result, key) => {
+        const camelKey = key.replace(/([-_][a-z])/g, (group) =>
+          group.toUpperCase().replace('-', '').replace('_', '')
+        );
+        result[camelKey] = toCamelCase(obj[key]);
+        return result;
+      }, {} as any);
+    }
+    return obj;
+  };
+
+  const handleAnalyze = async (fileOverride?: File) => {
+    const activeFile = fileOverride ?? file;
+    if (!activeFile) {
+      setError('Please select a file first.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setAnalysis(null);
+
+    const formData = new FormData();
+    formData.append('file', activeFile);
+
+    try {
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const uploadResult = await uploadResponse.json();
+
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'File upload failed.');
+      }
+
+      const trimResponse = await fetch('/api/trim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: uploadResult.filename,
+          minCgpa: 0,
+          maxCgpa: 4.0,
+          percentage: 0,
+          perfHigh: analysisThresholds.high,
+          perfMid: analysisThresholds.mid,
+        }),
+      });
+
+      const trimResult = await trimResponse.json();
+
+      if (!trimResult.success) {
+        throw new Error(trimResult.error || 'Analysis process failed.');
+      }
+      
+      const camelCaseResult = toCamelCase(trimResult);
+      setAnalysis(camelCaseResult);
+
+    } catch (err: any) {
+      setError(err.message || 'An unknown error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTrim = async () => {
@@ -97,6 +173,8 @@ export default function TrimPage() {
           minCgpa,
           maxCgpa,
           percentage,
+          perfHigh: analysisThresholds.high,
+          perfMid: analysisThresholds.mid,
         }),
       });
 
@@ -105,13 +183,45 @@ export default function TrimPage() {
       if (!trimResult.success) {
         throw new Error(trimResult.error || 'Trimming process failed.');
       }
-      
-      setAnalysis(trimResult);
+
+      const camelCaseResult = toCamelCase(trimResult);
+      setAnalysis(camelCaseResult);
 
     } catch (err: any) {
       setError(err.message || 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDownloadTrimmedData = async () => {
+    if (!analysis?.downloadFilename) {
+      setError('No trimmed dataset available for download.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/download/${encodeURIComponent(analysis.downloadFilename)}`);
+      if (!response.ok) {
+        throw new Error(`Download failed with status ${response.status}.`);
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        throw new Error('Download failed. Server returned an HTML error page.');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = analysis.downloadFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'Failed to download trimmed dataset.');
     }
   };
 
@@ -127,11 +237,11 @@ export default function TrimPage() {
           <Logo />
         </SidebarHeader>
         <SidebarContent className="p-4 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Trim Dataset</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Trim Dataset</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
               <div className="grid w-full items-center gap-2">
                 <Label htmlFor="dataset-file">Upload JSON Dataset</Label>
                 <Input id="dataset-file" type="file" accept=".json" onChange={handleFileChange} />
@@ -176,16 +286,51 @@ export default function TrimPage() {
               </Button>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Analysis Performance Groups</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="trim-analysis-high">High Threshold</Label>
+                <Input
+                  id="trim-analysis-high"
+                  type="number"
+                  step="0.05"
+                  value={analysisThresholds.high.toFixed(2)}
+                  onChange={(event) =>
+                    setAnalysisThresholds({
+                      ...analysisThresholds,
+                      high: Number(event.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="trim-analysis-mid">Mid Threshold</Label>
+                <Input
+                  id="trim-analysis-mid"
+                  type="number"
+                  step="0.05"
+                  value={analysisThresholds.mid.toFixed(2)}
+                  onChange={(event) =>
+                    setAnalysisThresholds({
+                      ...analysisThresholds,
+                      mid: Number(event.target.value),
+                    })
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
           {analysis?.downloadFilename && (
             <Card>
               <CardHeader>
                 <CardTitle>Download Trimmed Data</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button asChild variant="outline" className="w-full">
-                  <a href={`/api/download?filename=${analysis.downloadFilename}`} download>
-                    Download JSON
-                  </a>
+                <Button variant="outline" className="w-full" onClick={handleDownloadTrimmedData}>
+                  Download JSON
                 </Button>
               </CardContent>
             </Card>
@@ -233,73 +378,13 @@ export default function TrimPage() {
           )}
 
           {analysis ? (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex justify-between items-center">
-                    <span>Analysis Results</span>
-                    {analysis.downloadFilename && (
-                      <a href={`/api/download?filename=${analysis.downloadFilename}`} download>
-                        <Button variant="outline">Download Trimmed Data</Button>
-                      </a>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card>
-                  <CardHeader><CardTitle>Total Students</CardTitle></CardHeader>
-                  <CardContent><p className="text-3xl font-bold">{analysis.summary.total_students || 0}</p></CardContent>
-                </Card>
-                <Card>
-                  <CardHeader><CardTitle>Average CGPA</CardTitle></CardHeader>
-                  <CardContent><p className="text-3xl font-bold">{(analysis.summary.avg_cgpa || 0).toFixed(2)}</p></CardContent>
-                </Card>
-                <Card>
-                  <CardHeader><CardTitle>Average Attendance</CardTitle></CardHeader>
-                  <CardContent><p className="text-3xl font-bold">{((analysis.summary.avg_attendance || 0) * 100).toFixed(1)}%</p></CardContent>
-                </Card>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader><CardTitle>Performance Distribution</CardTitle></CardHeader>
-                  <CardContent>
-                    <ChartContainer config={chartConfig} className="mx-auto aspect-square w-full">
-                      <RechartsPieChart>
-                        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                        <Pie data={analysis.summary.performance_distribution} dataKey="value" nameKey="name" innerRadius={60} />
-                        <Legend />
-                      </RechartsPieChart>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader><CardTitle>Department Distribution</CardTitle></CardHeader>
-                  <CardContent>
-                    <ChartContainer config={chartConfig} className="w-full h-[300px]">
-                      <BarChart accessibilityLayer data={analysis.summary.department_distribution} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                        <CartesianGrid vertical={false} />
-                        <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
-                        <YAxis />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="value" fill="var(--color-value)" radius={4} />
-                      </BarChart>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader><CardTitle>Key Insights</CardTitle></CardHeader>
-                <CardContent className="space-y-2">
-                  {(analysis.insights || []).map((insight, index) => (
-                    <p key={index} className="text-sm p-2 bg-muted rounded-md">{insight}</p>
-                  ))}
-                </CardContent>
-              </Card>
-            </>
+            <AcademicPerformance
+              students={[]}
+              summary={analysis.summary}
+              params={analysis.params ?? null}
+              insights={analysis.insights || []}
+              isMergePage={true}
+            />
           ) : (
             <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
               <Card className="w-full max-w-md text-center">

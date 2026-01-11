@@ -1,4 +1,14 @@
 
+"""
+Merge and analyze one or more student datasets.
+
+Flow:
+1) Load and normalize student records.
+2) Compute summary metrics and chart-ready aggregates.
+3) Write a merged JSON output to tmp/.
+4) Print JSON response for the API caller.
+"""
+
 import json
 import sys
 import pandas as pd
@@ -28,6 +38,7 @@ NON_COURSE_KEYS = {
 }
 
 def calculate_semester_gpa(semester_data, credits_per_subject=3):
+    """Compute semester GPA by scanning course-grade keys."""
     total_points = 0
     total_credits = 0
 
@@ -46,7 +57,7 @@ def calculate_semester_gpa(semester_data, credits_per_subject=3):
     return total_points / total_credits if total_credits > 0 else np.nan
 
 def process_student_data(students):
-    """Processes raw student data to standardize fields and calculate aggregates."""
+    """Normalize schema differences and compute per-student aggregates."""
     for student in students:
         # Ensure each student has a unique ID
         if 'student_id' in student:
@@ -174,8 +185,8 @@ def process_student_data(students):
 
     return students
 
-def analyze_data(students_df, plot_points=10):
-    """Performs an in-depth analysis of the processed student dataset."""
+def analyze_data(students_df, plot_points=10, perf_high=3.5, perf_mid=2.0):
+    """Aggregate statistics and chart-ready structures for the UI."""
     summary = {}
    
 
@@ -221,7 +232,7 @@ def analyze_data(students_df, plot_points=10):
     summary['cgpa_distribution'] = cgpa_dist_data
 
     # Performance Distribution
-    perf_bins = [0, 2.5, 3.5, 4.0]
+    perf_bins = [0, perf_mid, perf_high, 4.0]
     labels = ['Low', 'Mid', 'High']
     students_df['performance_group'] = pd.cut(students_df['cgpa'], bins=perf_bins, labels=labels, include_lowest=True)
     performance_dist_series = students_df['performance_group'].value_counts()
@@ -346,8 +357,10 @@ def analyze_data(students_df, plot_points=10):
     return summary, insights
 
 def main():
-    # Default plot points
+    # 1) Read CLI args and gather file paths.
     plot_points = 10
+    perf_high = 3.5
+    perf_mid = 2.5
     file_paths = []
 
     # Separate file paths from other arguments
@@ -358,6 +371,18 @@ def main():
             except (ValueError, IndexError):
                 print(json.dumps({"error": "Invalid value for --plot-points"}), file=sys.stderr)
                 sys.exit(1)
+        elif arg.startswith('--perf-high='):
+            try:
+                perf_high = float(arg.split('=')[1])
+            except (ValueError, IndexError):
+                print(json.dumps({"error": "Invalid value for --perf-high"}), file=sys.stderr)
+                sys.exit(1)
+        elif arg.startswith('--perf-mid='):
+            try:
+                perf_mid = float(arg.split('=')[1])
+            except (ValueError, IndexError):
+                print(json.dumps({"error": "Invalid value for --perf-mid"}), file=sys.stderr)
+                sys.exit(1)
         else:
             file_paths.append(arg)
 
@@ -365,6 +390,7 @@ def main():
         print(json.dumps({"error": "No file paths provided"}), file=sys.stderr)
         sys.exit(1)
 
+    # 2) Load and concatenate all student records.
     all_students = []
     for file_path in file_paths:
         try:
@@ -385,9 +411,10 @@ def main():
         print(json.dumps({"error": "No valid student data found in any of the provided files"}), file=sys.stderr)
         sys.exit(1)
 
+    # 3) Normalize schema + compute student-level aggregates.
     processed_students = process_student_data(all_students)
 
-    # --- Convert semesters dict to list temporarily for analysis ---
+    # 4) Convert semesters dict -> list for pandas-friendly analysis.
     student_list_for_analysis = []
     for student in processed_students:
         semesters_as_list = list(student['semesters'].values())
@@ -397,7 +424,8 @@ def main():
 
     students_df = pd.DataFrame(student_list_for_analysis)
 
-    summary, insights = analyze_data(students_df.copy(), plot_points=plot_points)
+    # 5) Compute summary and insights for charts.
+    summary, insights = analyze_data(students_df.copy(), plot_points=plot_points, perf_high=perf_high, perf_mid=perf_mid)
 
 
     def convert_numpy_types(obj):
@@ -407,7 +435,7 @@ def main():
             return [convert_numpy_types(i) for i in obj]
         if isinstance(obj, (np.integer, np.int_)):
             return int(obj)
-        if isinstance(obj, (np.floating, np.float_)):
+        if isinstance(obj, np.floating):
             return float(obj)
         if isinstance(obj, np.ndarray):
             return obj.tolist()
@@ -415,15 +443,18 @@ def main():
             return None
         return obj
 
+    # 6) Ensure JSON-serializable output.
     summary = convert_numpy_types(summary)
     
-    # --- Save full dataset to a temporary file ---
+    # 7) Save merged dataset for download.
     output_dir = "tmp"
     os.makedirs(output_dir, exist_ok=True)
-    download_filename = f"merged_data_{uuid.uuid4()}.json"
+    unique_id = str(uuid.uuid4().int % 10000).zfill(4)
+    total_students = summary.get('total_students', len(processed_students))
+    download_filename = f"merged_{total_students}_students_{unique_id}.json"
     output_path = os.path.join(output_dir, download_filename)
 
-    # --- Prepare final JSON for download ---
+    # 8) Prepare final JSON (remove analysis-only fields).
     final_students_json = []
     for student in processed_students:
         student_copy = student.copy()
@@ -440,7 +471,7 @@ def main():
         
         final_students_json.append(student_copy)
 
-    # Save JSON
+    # 9) Write JSON file to disk.
     with open(output_path, 'w') as f:
         json.dump(final_students_json, f, indent=2)
         

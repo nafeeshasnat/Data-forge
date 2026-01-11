@@ -110,7 +110,8 @@ export function MainPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "student_dataset.json";
+    const uniqueId = String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+    a.download = `generated_${cleanStudents.length}_students_${uniqueId}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

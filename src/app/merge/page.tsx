@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BotMessageSquare, GitMerge, Loader2, Scissors, User } from 'lucide-react';
 import type { GenerationParams, AnalysisSummary } from '@/lib/types';
+import { performanceThresholds } from '@/lib/config';
 import { StudentDatasetSchema } from '@/lib/schemas';
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { MergeSidebar } from '@/components/app/merge-sidebar';
 import { useToast } from '@/hooks/use-toast';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/app/logo';
@@ -37,9 +37,13 @@ export default function MergePage() {
   const [insights, setInsights] = useState<string[]>([]);
   const [params, setParams] = useState<GenerationParams | null>(null);
   const [downloadPath, setDownloadPath] = useState<string | null>(null);
-  const [plainText, setPlainText] = useState<string>('');
+  const [downloadFilename, setDownloadFilename] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [plotPoints, setPlotPoints] = useState<number>(80);
+  const [analysisThresholds, setAnalysisThresholds] = useState({
+    high: performanceThresholds.high,
+    mid: performanceThresholds.mid,
+  });
   const { toast } = useToast();
 
   const validateDatasetFile = async (file: File) => {
@@ -92,13 +96,15 @@ export default function MergePage() {
     setSummary(null);
     setInsights([]);
     setDownloadPath(null);
-    setPlainText('');
+    setDownloadFilename(null);
 
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
     }
     formData.append('plotPoints', plotPoints.toString());
+    formData.append('perfHigh', analysisThresholds.high.toString());
+    formData.append('perfMid', analysisThresholds.mid.toString());
 
     try {
       const response = await fetch('/api/merge', {
@@ -119,6 +125,7 @@ export default function MergePage() {
       setSummary(camelCaseResult.summary || null);
       setInsights(camelCaseResult.insights || []);
       setDownloadPath(camelCaseResult.downloadPath || null);
+      setDownloadFilename(camelCaseResult.downloadFilename || null);
 
       toast({
         title: "Merge Successful",
@@ -136,61 +143,6 @@ export default function MergePage() {
     }
   };
 
-  const handleJsonToText = async (file: File) => {
-    if (!file) {
-      toast({
-        variant: "destructive",
-        title: "No file selected",
-        description: "Please select a JSON file to convert.",
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch('/api/json-to-text', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to convert file: ${response.statusText} - ${errorText}`);
-      }
-
-      const result = await response.text();
-      setPlainText(result);
-      setSummary(null);
-      setInsights([]);
-      setParams(null);
-      setDownloadPath(null);
-
-      toast({
-        title: "Conversion Successful",
-        description: "Successfully converted JSON file to plain text.",
-      });
-    } catch (error) {
-      console.error("An error occurred during conversion:", error);
-      toast({
-        variant: "destructive",
-        title: "Conversion Failed",
-        description: (error as Error).message,
-      });
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
-  const handleTrim = (minCgpa: number, maxCgpa: number, percentage: number) => {
-    toast({
-      variant: "destructive",
-      title: "Not Implemented",
-      description: "Trimming is not yet supported with backend processing.",
-    });
-  };
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -207,10 +159,11 @@ export default function MergePage() {
           <MergeSidebar 
             onMerge={handleMerge} 
             onFileChange={handleFileChange}
-            onJsonToText={handleJsonToText}
-            onTrim={handleTrim}
             mergedStudentsCount={summary?.totalStudents || 0}
             downloadPath={downloadPath}
+            downloadFilename={downloadFilename}
+            analysisThresholds={analysisThresholds}
+            onAnalysisThresholdsChange={setAnalysisThresholds}
             isLoading={isLoading}
           />
         </SidebarContent>
@@ -252,15 +205,6 @@ export default function MergePage() {
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
-          ) : plainText ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>JSON as Plain Text</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea value={plainText} readOnly rows={20} className="w-full p-2 font-mono" />
-              </CardContent>
-            </Card>
           ) : summary ? (
             <AcademicPerformance students={[]} summary={summary} params={params} insights={insights} isMergePage={true} />
           ) : (

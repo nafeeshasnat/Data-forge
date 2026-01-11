@@ -1,5 +1,6 @@
 
-import type { StudentWithCgpa, Semester, CreditLoadVsGradeData, AnalysisSummary } from "@/lib/types";
+import type { StudentWithCgpa, Semester, CreditLoadVsGradeData, AnalysisSummary, Grade } from "@/lib/types";
+import { defaultGradeScale } from "@/lib/config";
 
 export function getCgpaDistributionData(students: StudentWithCgpa[]) {
   if (!students || students.length === 0) return [];
@@ -44,27 +45,26 @@ export function getHscVsCgpaData(students: StudentWithCgpa[]) {
   }));
 }
 
-const GRADE_SCALE: Record<string, number> = {
-    "A+": 4.00, "A": 3.75, "A-": 3.50,
-    "B+": 3.25, "B": 3.00, "B-": 2.75,
-    "C+": 2.50, "C": 2.25,
-    "D": 2.00, "F": 0.00
-};
-
-const calculateGpaFromGrades = (semester: Omit<Semester, 'creditHours' | 'attendancePercentage'>): number => {
+const calculateGpaFromGrades = (
+  semester: Omit<Semester, 'creditHours' | 'attendancePercentage'>,
+  gradeScale: Record<Grade, number>
+): number => {
     let totalPoints = 0;
     let subjectCount = 0;
     for (const key in semester) {
         const grade = semester[key as keyof typeof semester];
-        if (typeof grade === 'string' && GRADE_SCALE[grade] !== undefined) {
-            totalPoints += GRADE_SCALE[grade];
+        if (typeof grade === 'string' && gradeScale[grade as Grade] !== undefined) {
+            totalPoints += gradeScale[grade as Grade];
             subjectCount++;
         }
     }
     return subjectCount > 0 ? totalPoints / subjectCount : 0;
 };
 
-export function computeCreditLoadVsGradeData(students: StudentWithCgpa[]): CreditLoadVsGradeData[] {
+export function computeCreditLoadVsGradeData(
+  students: StudentWithCgpa[],
+  gradeScale: Record<Grade, number> = defaultGradeScale
+): CreditLoadVsGradeData[] {
     if (!students) return [];
     
     const creditBins = new Map<number, { totalGpa: number; count: number }>();
@@ -72,7 +72,7 @@ export function computeCreditLoadVsGradeData(students: StudentWithCgpa[]): Credi
     students.forEach(student => {
       if (student.semesters && typeof student.semesters === 'object') {
         Object.values(student.semesters).forEach((semester: any) => {
-            const gpa = calculateGpaFromGrades(semester);
+            const gpa = calculateGpaFromGrades(semester, gradeScale);
             if (semester && semester.creditHours != null && gpa != null) {
                 const creditBin = Math.round(semester.creditHours / 3) * 3;
                 if (!creditBins.has(creditBin)) {

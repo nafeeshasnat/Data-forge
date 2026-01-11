@@ -31,3 +31,16 @@ export const StudentSchema = z.object({
 });
 
 export const StudentDatasetSchema = z.array(StudentSchema);
+
+export const GradeScaleSchema = z.object({
+  "A+": z.number(),
+  "A": z.number(),
+  "A-": z.number(),
+  "B+": z.number(),
+  "B": z.number(),
+  "B-": z.number(),
+  "C+": z.number(),
+  "C": z.number(),
+  "D": z.number(),
+  "F": z.number(),
+});

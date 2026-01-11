@@ -32,6 +32,11 @@ export type GenerationParams = {
     maxCredit: number;
     stdCredit: number;
     maxCreditImpact: number;
+    gradeScale?: Record<Grade, number>;
+    analysisPerformanceThresholds?: {
+        high: number;
+        mid: number;
+    };
 };
 
 export type PerformanceGroup = 'High' | 'Mid' | 'Low';

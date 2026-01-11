@@ -9,7 +9,6 @@ DataForge AI is a Vite + React application for generating, analyzing, trimming, 
 - **Interactive dashboard** with CGPA distributions, department mix, HSC vs CGPA, credit load effects, attendance impact, semester counts, and more.
 - **Dataset trimming** by CGPA range (client-side in the main generator; server-side via Python on the trim page).
 - **Dataset merging** and re-analysis via Python scripts and an Express API.
-- **JSON-to-text conversion** for exporting a readable plain text summary of datasets.
 - **Downloadable JSON** datasets stripped of analysis-only fields.
 
 ## Tech Stack
@@ -26,7 +25,7 @@ DataForge AI is a Vite + React application for generating, analyzing, trimming, 
 
 - Node.js 18+
 - npm
-- Python 3 (required for merge/trim/json-to-text endpoints)
+- Python 3 (required for merge/trim endpoints)
 - Python packages: `pandas`, `numpy`
 
 ### Install
@@ -76,7 +75,7 @@ src/
     config.ts                # Default parameters
     subjects.ts              # Department + subject pools
     types.ts                 # TypeScript types
-  scripts/                   # Python helpers for merge/trim/json-to-text
+  scripts/                   # Python helpers for merge/trim
 server/
   server.ts                  # Express server + API endpoints
 docs/
@@ -89,8 +88,6 @@ student_dataset.json         # Sample dataset
 - `/` (Main generator): parameter controls, dataset generation, dashboard, and client-side trim/download.
 - `/merge`: upload multiple JSON datasets, run Python merge + analysis, download merged output.
 - `/trim`: upload a JSON dataset, trim by CGPA range on the server, re-analyze, download output.
-
-Note: `src/app/upload/page.tsx` exists but is not wired into the router (`src/main.tsx`) and references a missing `@/app/actions` module.
 
 ## Data Model
 
@@ -148,15 +145,22 @@ Defined in `src/components/app/parameter-sidebar.tsx` and used by `src/lib/data-
 - Deterministic trimming of a percentage of students in a CGPA range
 - Insights such as dominant performance group and CGPA vs HSC deltas
 
+## Flow Diagram
+
+```text
+UI (Generate) --> data-generator.ts --> analysis-engine.ts --> Dashboard + Download
+UI (Merge) ----> /api/merge ---------> merge_and_analyze.py --> Summary + Download
+UI (Trim) -----> /api/upload + /api/trim -> trim_and_analyze.py -> Summary + Download
+```
+
 ## API Endpoints (Express)
 
 Defined in `server/server.ts` (used by the `/merge` page):
 
 - `POST /api/merge`: merge multiple JSON datasets and analyze using `src/scripts/merge_and_analyze.py`
 - `GET /api/download/:filename`: download merged output stored in the `tmp` directory
-- `POST /api/json-to-text`: convert JSON dataset to plain text via `src/scripts/json_to_text.py`
-
-The `/trim` page currently calls `/api/upload` and `/api/trim`, which are implemented as Next.js-style route files in `src/app/api`. These are not wired into the Express server and will not work unless you run the project in a Next.js runtime or add equivalent Express endpoints.
+- `POST /api/upload`: upload a dataset for trimming
+- `POST /api/trim`: trim and analyze a dataset via `src/scripts/trim_and_analyze.py`
 
 ## Python Scripts
 
@@ -164,7 +168,6 @@ Located in `src/scripts`:
 
 - `merge_and_analyze.py`: merges datasets, normalizes schema, computes summaries and chart-ready aggregates
 - `trim_and_analyze.py`: trims a dataset by CGPA range and re-analyzes, writing a new JSON file to `tmp`
-- `json_to_text.py`: prints a human-readable view of a dataset
 
 ## Notes
 

@@ -1,20 +1,13 @@
 'use client';
 
 import type { Student, StudentWithCgpa, AnalysisSummary, PerformanceGroup, GenerationParams, Grade, Semester, StudentWithSemesterDetails } from "@/lib/types";
+import { defaultGradeScale, performanceThresholds } from "@/lib/config";
 
-const GRADE_SCALE: Record<Grade, number> = {
-    'A+': 4.0,
-    'A': 3.75,
-    'A-': 3.5,
-    'B+': 3.25,
-    'B': 3.0,
-    'B-': 2.75,
-    'C+': 2.5,
-    'C': 2.25,
-    'D': 2.0,
-    'F': 0.0,
-};
-
+// Analysis flow:
+// 1) Normalize student IDs.
+// 2) Compute CGPA and per-student metrics.
+// 3) Build summary + insights.
+// 4) Optionally trim by CGPA range.
 
 /**
  * A simple string hashing function for deterministic shuffling.
@@ -42,6 +35,8 @@ export class AnalysisEngine {
   private students: Student[];
   private params: GenerationParams;
   private studentsWithCgpa: StudentWithCgpa[];
+  private gradeScale: Record<Grade, number>;
+  private analysisThresholds: { high: number; mid: number };
 
   constructor(students: Student[], params: GenerationParams) {
     // Ensure every student has a unique numeric student_id for all operations.
@@ -70,6 +65,8 @@ export class AnalysisEngine {
     });
 
     this.params = params;
+    this.gradeScale = params.gradeScale ?? defaultGradeScale;
+    this.analysisThresholds = params.analysisPerformanceThresholds ?? performanceThresholds;
     // Pre-calculate CGPA for all students on construction, as it's needed for trimming.
     this.studentsWithCgpa = this.students.map(student => this.calculateCgpa(student));
   }
@@ -185,8 +182,8 @@ export class AnalysisEngine {
 
         for (const subject in semester) {
             if (subject !== 'creditHours' && subject !== 'attendancePercentage') {
-                const grade = semester[subject] as keyof typeof GRADE_SCALE;
-                semesterSubjectsGradePoints += (GRADE_SCALE[grade] || 0) * this.params.creditsPerSubject;
+                const grade = semester[subject] as keyof typeof this.gradeScale;
+                semesterSubjectsGradePoints += (this.gradeScale[grade] || 0) * this.params.creditsPerSubject;
                 semesterSubjectCredits += this.params.creditsPerSubject;
             }
         }
@@ -220,8 +217,8 @@ export class AnalysisEngine {
   
           for (const subject in semester) {
               if (subject !== 'creditHours' && subject !== 'attendancePercentage') {
-                  const grade = semester[subject] as keyof typeof GRADE_SCALE;
-                  semesterGradePoints += (GRADE_SCALE[grade] || 0) * this.params.creditsPerSubject;
+                  const grade = semester[subject] as keyof typeof this.gradeScale;
+                  semesterGradePoints += (this.gradeScale[grade] || 0) * this.params.creditsPerSubject;
                   semesterCredits += this.params.creditsPerSubject;
               }
           }
@@ -244,8 +241,8 @@ export class AnalysisEngine {
    * Classifies a student's performance based on their CGPA.
    */
   private classifyPerformance(cgpa: number): PerformanceGroup {
-    if (cgpa >= 3.5) return 'High';
-    if (cgpa >= 2.0) return 'Mid';
+    if (cgpa >= this.analysisThresholds.high) return 'High';
+    if (cgpa >= this.analysisThresholds.mid) return 'Mid';
     return 'Low';
   }
 

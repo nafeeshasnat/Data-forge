@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { GenerationParams } from "@/lib/types";
+import { GenerationParams, Grade } from "@/lib/types";
 import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ThreeValueSlider } from "@/components/ui/three-value-slider";
-import { defaultGenerationParams } from '@/lib/config';
+import { defaultGenerationParams, defaultGradeScale, performanceThresholds } from '@/lib/config';
+import { GradeScaleSchema } from "@/lib/schemas";
 import { TrimDataDialog } from '@/components/app/trim-data-dialog';
 
 interface ParameterSidebarProps {
@@ -20,6 +21,7 @@ interface ParameterSidebarProps {
 
 export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, isGenerating, onTrim, isDataPresent }) => {
   const [params, setParams] = useState<GenerationParams>({ ...defaultGenerationParams });
+  const gradeOrder: Grade[] = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "D", "F"];
 
   const [distributionPoints, setDistributionPoints] = useState([params.lowPerformanceChance * 100, (1 - params.highPerformanceChance) * 100]);
 
@@ -32,6 +34,46 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setParams(prev => ({...prev, [name]: parseFloat(value)}));
+  };
+
+  const handleGradeScaleChange = (grade: Grade, value: string) => {
+    const numericValue = Number(value);
+    setParams(prev => ({
+      ...prev,
+      gradeScale: {
+        ...(prev.gradeScale ?? defaultGradeScale),
+        [grade]: Number.isFinite(numericValue) ? numericValue : 0,
+      },
+    }));
+  };
+
+  const handleGradeScaleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const result = GradeScaleSchema.safeParse(parsed);
+      if (!result.success) {
+        return;
+      }
+      setParams(prev => ({ ...prev, gradeScale: result.data }));
+    } catch (error) {
+      // Ignore parse errors; keep current scale.
+    }
+  };
+
+  const handleThresholdChange = (key: "high" | "mid", value: string) => {
+    const numericValue = Number(value);
+    setParams(prev => ({
+      ...prev,
+      analysisPerformanceThresholds: {
+        high: prev.analysisPerformanceThresholds?.high ?? performanceThresholds.high,
+        mid: prev.analysisPerformanceThresholds?.mid ?? performanceThresholds.mid,
+        [key]: Number.isFinite(numericValue) ? numericValue : 0,
+      },
+    }));
   };
   
   const lowPercentage = distributionPoints[0];
@@ -99,6 +141,75 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
                     <Label>Credit Load Impact: {params.maxCreditImpact.toFixed(2)}</Label>
                     <Slider min={0} max={0.5} step={0.01} value={[params.maxCreditImpact]} onValueChange={(v) => setParams(p => ({...p, maxCreditImpact: v[0]}))} />
                 </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-4">
+            <AccordionTrigger>Grading Scale</AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                {gradeOrder.map((grade) => (
+                  <div key={grade} className="space-y-2">
+                    <Label htmlFor={`grade-${grade}`}>{grade}</Label>
+                    <Input
+                      id={`grade-${grade}`}
+                      type="number"
+                      step="0.05"
+                      value={(params.gradeScale ?? defaultGradeScale)[grade]}
+                      onChange={(event) => handleGradeScaleChange(grade, event.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="grade-scale-upload">Upload Grade Scale (JSON)</Label>
+                <Input
+                  id="grade-scale-upload"
+                  type="file"
+                  accept="application/json"
+                  onChange={handleGradeScaleUpload}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setParams(prev => ({ ...prev, gradeScale: defaultGradeScale }))}
+                >
+                  Reset to Default
+                </Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-5">
+            <AccordionTrigger>Analysis Performance Groups</AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="analysis-high">High Threshold</Label>
+                  <Input
+                    id="analysis-high"
+                    type="number"
+                    step="0.05"
+                    value={(params.analysisPerformanceThresholds?.high ?? performanceThresholds.high).toFixed(2)}
+                    onChange={(event) => handleThresholdChange("high", event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="analysis-mid">Mid Threshold</Label>
+                  <Input
+                    id="analysis-mid"
+                    type="number"
+                    step="0.05"
+                    value={(params.analysisPerformanceThresholds?.mid ?? performanceThresholds.mid).toFixed(2)}
+                    onChange={(event) => handleThresholdChange("mid", event.target.value)}
+                  />
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setParams(prev => ({ ...prev, analysisPerformanceThresholds: performanceThresholds }))}
+              >
+                Reset to Default
+              </Button>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
