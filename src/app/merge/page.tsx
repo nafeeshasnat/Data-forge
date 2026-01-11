@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { BotMessageSquare, GitMerge, Loader2, Scissors, User } from 'lucide-react';
 import type { GenerationParams, AnalysisSummary } from '@/lib/types';
 import { performanceThresholds } from '@/lib/config';
-import { StudentDatasetSchema } from '@/lib/schemas';
+import { StudentDatasetContainerSchema } from '@/lib/schemas';
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { MergeSidebar } from '@/components/app/merge-sidebar';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +49,7 @@ export default function MergePage() {
   const validateDatasetFile = async (file: File) => {
     const text = await file.text();
     const parsed = JSON.parse(text);
-    const result = StudentDatasetSchema.safeParse(parsed);
+    const result = StudentDatasetContainerSchema.safeParse(parsed);
     return result.success;
   };
 

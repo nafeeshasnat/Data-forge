@@ -1,10 +1,11 @@
-# DataForge AI
+# DataForge
 
-DataForge AI is a Vite + React application for generating, analyzing, trimming, and merging synthetic student datasets. It combines an in-browser data generation and analysis engine with optional Python-powered workflows for heavier dataset processing, plus a UI for generating a single student profile.
+DataForge is a Vite + React application for generating, analyzing, trimming, and merging synthetic student datasets. It combines an in-browser data generation and analysis engine with optional Python-powered workflows for heavier dataset processing, plus a UI for generating a single student profile.
 
 ## Key Features
 
 - **Synthetic data generation** with adjustable population size, performance mix, credit load, attendance impact, and more.
+- **Seeded generation** for reproducible datasets, with seed and params saved in metadata.
 - **Single student generator UI** with per-semester controls for credits and attendance.
 - **Deterministic analysis engine** that produces summary statistics, performance grouping, and data prepared for charts.
 - **Interactive dashboard** with CGPA distributions, department mix, HSC vs CGPA, credit load effects, attendance impact, semester counts, and more.
@@ -12,7 +13,8 @@ DataForge AI is a Vite + React application for generating, analyzing, trimming, 
 - **Dataset merging** and re-analysis via Python scripts and an Express API.
 - **Configurable grade scale** (letter-grade to point mapping) via UI inputs or JSON upload.
 - **Analysis-only performance thresholds** (High/Mid/Low cutoffs) configurable without changing generation.
-- **Downloadable JSON** datasets stripped of analysis-only fields.
+- **Downloadable JSON** datasets with metadata (seed, params, trim history, analysis report).
+- **Automatic metadata sidecar** (`*.metadata.json`) with generator version, timestamp, params, seed, grade-scale hash, and dataset size.
 
 ## Tech Stack
 
@@ -84,6 +86,7 @@ server/
   server.ts                  # Express server + API endpoints
 docs/
   blueprint.md               # High-level product blueprint
+  thesis-baseline-params.json # Thesis baseline generation parameters
 student_dataset.json         # Sample dataset
 grade-scale.default.json     # Default letter-grade scale configuration
 ```
@@ -140,8 +143,10 @@ Defined in `src/components/app/parameter-sidebar.tsx` and used by `src/lib/data-
 - `preGradScoreInfluence`: weight of SSC/HSC GPA on university GPA
 - `exceptionPercentage`: chance of exceptional performance swings
 - `attendanceImpact`: attendance effect on GPA
+- `preGradDecay`: semester-by-semester decay for pre-grad influence
 - `gradeScale`: letter grade to point mapping (optional; defaults to `grade-scale.default.json`)
 - `analysisPerformanceThresholds`: analysis-only High/Mid cutoffs for performance grouping
+- `seed`: reproducible RNG seed (optional)
 
 ## Analysis Engine
 
@@ -157,6 +162,8 @@ Defined in `src/components/app/parameter-sidebar.tsx` and used by `src/lib/data-
 
 ```text
 UI (Generate) --> data-generator.ts --> analysis-engine.ts --> Dashboard + Download
+UI (Generate + Trim) --> data-generator.ts --> analysis-engine.ts --> Dashboard + Download (with trim history)
+UI (Generate) --> metadata sidecar (generator version + grade scale hash)
 UI (Single) --> data-generator.ts (single student) --> Download
 UI (Merge) ----> /api/merge ---------> merge_and_analyze.py --> Summary + Download
 UI (Trim) -----> /api/upload + /api/trim -> trim_and_analyze.py -> Summary + Download
@@ -185,3 +192,4 @@ Located in `src/scripts`:
 - `server/server.js` appears to be an outdated/invalid build artifact and is not used by the TypeScript server.
 - `student_dataset.json` is a sample output dataset for testing.
 - Optional analysis thresholds from UI (does not affect generation)
+- Merged outputs include a metadata `sources` list derived from input files (seed + params when present).

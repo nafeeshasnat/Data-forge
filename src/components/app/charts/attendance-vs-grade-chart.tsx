@@ -68,9 +68,16 @@ export function AttendanceVsGradeChart({ students, plotPoints = 80 }: Attendance
 
     if (allSemesters.length === 0) return { chartData: [], xDomain: [50, 100], xTicks: [] };
 
-    const attendancePercentages = allSemesters.map(s => s.attendancePercentage);
-    const minAttendance = Math.min(...attendancePercentages);
-    const maxAttendance = Math.max(...attendancePercentages);
+    let minAttendance = Infinity;
+    let maxAttendance = -Infinity;
+    for (const semester of allSemesters) {
+      if (semester.attendancePercentage < minAttendance) {
+        minAttendance = semester.attendancePercentage;
+      }
+      if (semester.attendancePercentage > maxAttendance) {
+        maxAttendance = semester.attendancePercentage;
+      }
+    }
     const range = maxAttendance - minAttendance;
     const binSize = range > 0 ? range / plotPoints : 1;
 

@@ -8,7 +8,7 @@ import { GenerationParams, Grade } from "@/lib/types";
 import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ThreeValueSlider } from "@/components/ui/three-value-slider";
-import { defaultGenerationParams, defaultGradeScale, performanceThresholds } from '@/lib/config';
+import { defaultGenerationParams, defaultGradeScale, performanceThresholds, thesisBaselineProfiles } from '@/lib/config';
 import { GradeScaleSchema } from "@/lib/schemas";
 import { TrimDataDialog } from '@/components/app/trim-data-dialog';
 
@@ -22,6 +22,7 @@ interface ParameterSidebarProps {
 export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, isGenerating, onTrim, isDataPresent }) => {
   const [params, setParams] = useState<GenerationParams>({ ...defaultGenerationParams });
   const gradeOrder: Grade[] = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "D", "F"];
+  const [baselineKey, setBaselineKey] = useState<string>("thesisBaseline");
 
   const [distributionPoints, setDistributionPoints] = useState([params.lowPerformanceChance * 100, (1 - params.highPerformanceChance) * 100]);
 
@@ -64,6 +65,13 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
     }
   };
 
+  const handleSeedChange = (value: string) => {
+    setParams(prev => ({
+      ...prev,
+      seed: value.trim() === "" ? undefined : value,
+    }));
+  };
+
   const handleThresholdChange = (key: "high" | "mid", value: string) => {
     const numericValue = Number(value);
     setParams(prev => ({
@@ -74,6 +82,15 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
         [key]: Number.isFinite(numericValue) ? numericValue : 0,
       },
     }));
+  };
+
+  const applyBaseline = () => {
+    const baseline = thesisBaselineProfiles[baselineKey] ?? thesisBaselineProfiles.thesisBaseline;
+    setParams({ ...baseline });
+    setDistributionPoints([
+      baseline.lowPerformanceChance * 100,
+      (1 - baseline.highPerformanceChance) * 100,
+    ]);
   };
   
   const lowPercentage = distributionPoints[0];
@@ -96,6 +113,16 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
                         <Slider id="numStudents" name="numStudents" min={100} max={5000} step={100} value={[params.numStudents]} onValueChange={(v) => setParams(p => ({...p, numStudents: v[0]}))} />
                         <Input type="number" name="numStudents" className="w-24 h-8" value={params.numStudents} onChange={handleInputChange} step={100}/>
                     </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="seed">Seed (optional)</Label>
+                  <Input
+                    id="seed"
+                    type="text"
+                    value={params.seed ?? ""}
+                    onChange={(event) => handleSeedChange(event.target.value)}
+                    placeholder="e.g. thesis-2025"
+                  />
                 </div>
             </AccordionContent>
           </AccordionItem>
@@ -216,6 +243,21 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
         <div className="flex flex-col gap-2">
           <Button onClick={() => onGenerate(params)} disabled={isGenerating} className="w-full">
             {isGenerating ? 'Generating...' : 'Generate Data'}
+          </Button>
+          <div className="space-y-2">
+            <Label htmlFor="baseline-profile">Baseline Profile</Label>
+            <select
+              id="baseline-profile"
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+              value={baselineKey}
+              onChange={(event) => setBaselineKey(event.target.value)}
+            >
+              <option value="thesisBaseline">Thesis Baseline</option>
+              <option value="naturalDistribution">Natural Distribution</option>
+            </select>
+          </div>
+          <Button type="button" variant="outline" onClick={applyBaseline} className="w-full">
+            Load Baseline
           </Button>
           <TrimDataDialog onTrim={onTrim} disabled={!isDataPresent} />
         </div>

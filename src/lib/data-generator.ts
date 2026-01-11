@@ -51,21 +51,59 @@ const DEFAULT_GRADE_SCALE_TUPLES: [Grade, number][] = [
   ["D", 2.00], ["F", 0.00]
 ];
 
-// Helper functions
-const uniform = (min: number, max: number) => Math.random() * (max - min) + min;
-const randint = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+type Rng = {
+  random: () => number;
+};
 
-function shuffle<T>(array: T[]): T[] {
+const hashStringToSeed = (value: string): number => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    const char = value.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return hash;
+};
+
+const mulberry32 = (seed: number) => {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6D2B79F5;
+    let result = Math.imul(t ^ (t >>> 15), t | 1);
+    result ^= result + Math.imul(result ^ (result >>> 7), result | 61);
+    return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const createRng = (seed?: number | string): Rng => {
+  if (seed === undefined || seed === null || seed === "") {
+    return { random: Math.random };
+  }
+  const seedNumber = typeof seed === "number" ? seed : hashStringToSeed(seed);
+  return { random: mulberry32(seedNumber) };
+};
+
+const getSeededGenerationId = (seed: number | string): number => {
+  const seedNumber = typeof seed === "number" ? seed : hashStringToSeed(seed);
+  const normalized = Math.abs(seedNumber) % 9000;
+  return 101 + normalized;
+};
+
+// Helper functions
+const uniform = (rng: Rng, min: number, max: number) => rng.random() * (max - min) + min;
+const randint = (rng: Rng, min: number, max: number) => Math.floor(rng.random() * (max - min + 1)) + min;
+
+function shuffle<T>(rng: Rng, array: T[]): T[] {
   let currentIndex = array.length, randomIndex;
   while (currentIndex !== 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
+    randomIndex = Math.floor(rng.random() * currentIndex);
     currentIndex--;
     [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
   }
   return array;
 }
 
-const choice = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const choice = <T>(rng: Rng, arr: T[]): T => arr[Math.floor(rng.random() * arr.length)];
 
 const PERFORMANCE_BOUNDARIES: Record<PerformanceGroup, { ssc: [number, number], hsc: [number, number], uni: [number, number] }> = {
     High: { ssc: [3.6, 5.0], hsc: [3.6, 5.0], uni: [3.2, 4.0] },
@@ -73,24 +111,24 @@ const PERFORMANCE_BOUNDARIES: Record<PerformanceGroup, { ssc: [number, number], 
     Low:  { ssc: [2.0, 3.6], hsc: [2.0, 3.6], uni: [2.0, 3.2] },
 };
 
-function selectPerformanceGroup(params: GenerationParams): PerformanceGroup {
+function selectPerformanceGroup(rng: Rng, params: GenerationParams): PerformanceGroup {
   const { highPerformanceChance, lowPerformanceChance } = params;
   const midPerformanceChance = 1 - highPerformanceChance - lowPerformanceChance;
-  const rand = Math.random();
+  const rand = rng.random();
   if (rand < highPerformanceChance) return 'High';
   if (rand < highPerformanceChance + midPerformanceChance) return 'Mid';
   return 'Low';
 }
 
-function getExceptionalPerformanceGroup(originalGroup: PerformanceGroup): PerformanceGroup {
+function getExceptionalPerformanceGroup(rng: Rng, originalGroup: PerformanceGroup): PerformanceGroup {
     if (originalGroup === 'High') return 'Low';
     if (originalGroup === 'Low') return 'High';
-    return Math.random() < 0.5 ? 'High' : 'Low';
+    return rng.random() < 0.5 ? 'High' : 'Low';
 }
 
-function generateGpaInBounds(group: PerformanceGroup, type: 'ssc' | 'hsc'): number {
+function generateGpaInBounds(rng: Rng, group: PerformanceGroup, type: 'ssc' | 'hsc'): number {
   const [min, max] = PERFORMANCE_BOUNDARIES[group][type];
-  return uniform(min, max);
+  return uniform(rng, min, max);
 }
 
 function gpaToGrade(gpa: number, gradeScaleTuples: [Grade, number][]): Grade {
@@ -111,6 +149,7 @@ function creditImpact(credits: number, params: GenerationParams): number {
 }
 
 export function buildCreditPlan(
+  rng: Rng,
   semesterCount: number,
   averageCredits: number,
   minCredit: number,
@@ -125,7 +164,7 @@ export function buildCreditPlan(
     const maxForRemaining = (semestersLeft - 1) * maxCredit;
     const minAllowed = Math.max(minCredit, remaining - maxForRemaining);
     const maxAllowed = Math.min(maxCredit, remaining - minForRemaining);
-    const nextCredits = semestersLeft === 1 ? remaining : randint(minAllowed, maxAllowed);
+    const nextCredits = semestersLeft === 1 ? remaining : randint(rng, minAllowed, maxAllowed);
     plan.push(nextCredits);
     remaining -= nextCredits;
   }
@@ -142,9 +181,12 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
   const currentYear = new Date().getFullYear();
   const maxBirthYear = currentYear - 30;
   const minBirthYear = maxBirthYear - 12;
+  const rng = createRng(params.seed);
 
   // Get the unique generation ID for this batch of students
-  const generationId = getNextGenerationId();
+  const generationId = params.seed !== undefined && params.seed !== null && params.seed !== ""
+    ? getSeededGenerationId(params.seed)
+    : getNextGenerationId();
 
   for (let i = 1; i <= params.numStudents; i++) {
     // The second part of the ID, unique within this dataset (1 to 5000)
@@ -153,27 +195,27 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     // Combine the generation ID and the student-specific ID
     const student_id = (generationId * 10000) + studentInGenerationId;
 
-    const performanceGroup = selectPerformanceGroup(params);
-    const department = choice(DEPARTMENTS);
-    const ssc_gpa = parseFloat(generateGpaInBounds(performanceGroup, 'ssc').toFixed(2));
-    const hsc_gpa = parseFloat(generateGpaInBounds(performanceGroup, 'hsc').toFixed(2));
+    const performanceGroup = selectPerformanceGroup(rng, params);
+    const department = choice(rng, DEPARTMENTS);
+    const ssc_gpa = parseFloat(generateGpaInBounds(rng, performanceGroup, 'ssc').toFixed(2));
+    const hsc_gpa = parseFloat(generateGpaInBounds(rng, performanceGroup, 'hsc').toFixed(2));
     
     const preGradUniGpa = ((ssc_gpa / 5.0) + (hsc_gpa / 5.0)) / 2 * 4.0;
 
-    const isPerfectScorer = performanceGroup === 'High' && preGradUniGpa > 3.8 && Math.random() < 0.8;
+    const isPerfectScorer = performanceGroup === 'High' && preGradUniGpa > 3.8 && rng.random() < 0.8;
     
     const fullSubjectPool = generateSubjectPool(department);
-    const studentSubjectPool = shuffle([...fullSubjectPool]).slice(0, SUBJECT_COUNT);
+    const studentSubjectPool = shuffle(rng, [...fullSubjectPool]).slice(0, SUBJECT_COUNT);
 
     const semesters: Record<string, Semester> = {};
     let semesterId = 1;
     let subjectsToAssign = [...studentSubjectPool];
-    const studentBaseAttendance = uniform(60, 98);
+    const studentBaseAttendance = uniform(rng, 60, 98);
     let prevAccumulatedGpa = 0.0; // start with 0 accumulated GPA
 
     while (subjectsToAssign.length > 0) {
       const subjectCount = Math.min(
-        Math.ceil(randint(params.minCredit, params.maxCredit) / params.creditsPerSubject),
+        Math.ceil(randint(rng, params.minCredit, params.maxCredit) / params.creditsPerSubject),
         subjectsToAssign.length
       );
       const actualCredits = subjectCount * params.creditsPerSubject;
@@ -186,7 +228,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     
       let semesterGpa: number;
       const attendancePercentage = Math.round(
-        Math.max(0, Math.min(100, studentBaseAttendance + uniform(-2.5, 2.5)))
+        Math.max(0, Math.min(100, studentBaseAttendance + uniform(rng, -2.5, 2.5)))
       );
     
       if (isPerfectScorer) {
@@ -196,12 +238,20 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
         let baseGpa = preGradUniGpa * w_preGrad + prevAccumulatedGpa * w_accum;
     
         // Random noise per semester
-        baseGpa += uniform(-0.2, 0.2);
+        baseGpa += uniform(rng, -0.2, 0.2);
+
+        if (params.transitionShock
+          && performanceGroup !== 'High'
+          && hsc_gpa >= params.transitionShock.hscMin
+          && semesterId <= params.transitionShock.maxSemesters
+        ) {
+          baseGpa -= params.transitionShock.drop;
+        }
     
         // Exceptional performance adjustment
-        if (performanceGroup !== 'High' && Math.random() < params.exceptionPercentage) {
+        if (performanceGroup !== 'High' && rng.random() < params.exceptionPercentage) {
           const exceptionalSwing = 0.35;
-          baseGpa += getExceptionalPerformanceGroup(performanceGroup) === 'High' ? exceptionalSwing : -exceptionalSwing;
+          baseGpa += getExceptionalPerformanceGroup(rng, performanceGroup) === 'High' ? exceptionalSwing : -exceptionalSwing;
         }
     
         // High performer "perfect score push"
@@ -231,7 +281,7 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
       for (const subject of semesterSubjects) {
         let finalGpaForSubject = isPerfectScorer
           ? 4.0
-          : Math.max(0, Math.min(4.0, semesterGpa + uniform(-0.1, 0.1)));
+          : Math.max(0, Math.min(4.0, semesterGpa + uniform(rng, -0.1, 0.1)));
         semesterData[subject] = gpaToGrade(finalGpaForSubject, normalizedGradeScaleTuples);
       }
     
@@ -243,8 +293,8 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
       student_id: student_id,
       ssc_gpa: ssc_gpa,
       hsc_gpa: hsc_gpa,
-      gender: choice(['male', 'female']),
-      birth_year: randint(minBirthYear, maxBirthYear),
+      gender: choice(rng, ['male', 'female']),
+      birth_year: randint(rng, minBirthYear, maxBirthYear),
       department: department,
       semesters: semesters,
     });
@@ -257,6 +307,7 @@ export function generateSingleStudent(
   params: GenerationParams,
   options: SingleStudentOptions
 ): { student: Student; semesterSummaries: Array<{ creditHours: number; attendancePercentage: number; gpa: number }> } {
+  const rng = createRng(params.seed);
   const gradeScale = params.gradeScale ?? defaultGradeScale;
   const gradeScaleTuples = Object.entries(gradeScale)
     .map(([grade, value]) => [grade as Grade, value] as [Grade, number])
@@ -266,22 +317,24 @@ export function generateSingleStudent(
   const maxBirthYear = currentYear - 30;
   const minBirthYear = maxBirthYear - 12;
 
-  const generationId = getNextGenerationId();
+  const generationId = params.seed !== undefined && params.seed !== null && params.seed !== ""
+    ? getSeededGenerationId(params.seed)
+    : getNextGenerationId();
   const student_id = (generationId * 10000) + 1;
-  const department = choice(DEPARTMENTS);
-  const ssc_gpa = parseFloat(generateGpaInBounds(options.performanceGroup, 'ssc').toFixed(2));
-  const hsc_gpa = parseFloat(generateGpaInBounds(options.performanceGroup, 'hsc').toFixed(2));
+  const department = choice(rng, DEPARTMENTS);
+  const ssc_gpa = parseFloat(generateGpaInBounds(rng, options.performanceGroup, 'ssc').toFixed(2));
+  const hsc_gpa = parseFloat(generateGpaInBounds(rng, options.performanceGroup, 'hsc').toFixed(2));
   const preGradUniGpa = ((ssc_gpa / 5.0) + (hsc_gpa / 5.0)) / 2 * 4.0;
-  const isPerfectScorer = options.performanceGroup === 'High' && preGradUniGpa > 3.8 && Math.random() < 0.8;
+  const isPerfectScorer = options.performanceGroup === 'High' && preGradUniGpa > 3.8 && rng.random() < 0.8;
 
   const fullSubjectPool = generateSubjectPool(department);
-  const studentSubjectPool = shuffle([...fullSubjectPool]).slice(0, SUBJECT_COUNT);
-  const creditPlan = buildCreditPlan(options.semesterCount, options.averageCredits, params.minCredit, params.maxCredit);
+  const studentSubjectPool = shuffle(rng, [...fullSubjectPool]).slice(0, SUBJECT_COUNT);
+  const creditPlan = buildCreditPlan(rng, options.semesterCount, options.averageCredits, params.minCredit, params.maxCredit);
 
   const semesters: Record<string, Semester> = {};
   const semesterSummaries: Array<{ creditHours: number; attendancePercentage: number; gpa: number }> = [];
   let subjectsToAssign = [...studentSubjectPool];
-  const studentBaseAttendance = uniform(60, 98);
+  const studentBaseAttendance = uniform(rng, 60, 98);
   let prevAccumulatedGpa = 0.0;
 
   for (let semesterIndex = 0; semesterIndex < creditPlan.length; semesterIndex += 1) {
@@ -301,18 +354,26 @@ export function generateSingleStudent(
 
     let semesterGpa: number;
     const attendancePercentage = Math.round(
-      Math.max(0, Math.min(100, studentBaseAttendance + uniform(-2.5, 2.5)))
+      Math.max(0, Math.min(100, studentBaseAttendance + uniform(rng, -2.5, 2.5)))
     );
 
     if (isPerfectScorer) {
       semesterGpa = 4.0;
     } else {
       let baseGpa = preGradUniGpa * w_preGrad + prevAccumulatedGpa * w_accum;
-      baseGpa += uniform(-0.2, 0.2);
+      baseGpa += uniform(rng, -0.2, 0.2);
 
-      if (options.performanceGroup !== 'High' && Math.random() < params.exceptionPercentage) {
+      if (params.transitionShock
+        && options.performanceGroup !== 'High'
+        && hsc_gpa >= params.transitionShock.hscMin
+        && semesterId <= params.transitionShock.maxSemesters
+      ) {
+        baseGpa -= params.transitionShock.drop;
+      }
+
+      if (options.performanceGroup !== 'High' && rng.random() < params.exceptionPercentage) {
         const exceptionalSwing = 0.35;
-        baseGpa += getExceptionalPerformanceGroup(options.performanceGroup) === 'High' ? exceptionalSwing : -exceptionalSwing;
+        baseGpa += getExceptionalPerformanceGroup(rng, options.performanceGroup) === 'High' ? exceptionalSwing : -exceptionalSwing;
       }
 
       if (options.performanceGroup === 'High') {
@@ -342,7 +403,7 @@ export function generateSingleStudent(
     for (const subject of semesterSubjects) {
       const finalGpaForSubject = isPerfectScorer
         ? 4.0
-        : Math.max(0, Math.min(4.0, semesterGpa + uniform(-0.1, 0.1)));
+        : Math.max(0, Math.min(4.0, semesterGpa + uniform(rng, -0.1, 0.1)));
       semesterData[subject] = gpaToGrade(finalGpaForSubject, normalizedGradeScaleTuples);
     }
 
@@ -359,8 +420,8 @@ export function generateSingleStudent(
       student_id,
       ssc_gpa,
       hsc_gpa,
-      gender: choice(['male', 'female']),
-      birth_year: randint(minBirthYear, maxBirthYear),
+      gender: choice(rng, ['male', 'female']),
+      birth_year: randint(rng, minBirthYear, maxBirthYear),
       department,
       semesters,
     },

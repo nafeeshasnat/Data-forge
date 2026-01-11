@@ -26,6 +26,7 @@ export type GenerationParams = {
     lowPerformanceChance: number;
     exceptionPercentage: number;
     attendanceImpact: number;
+    preGradDecay?: number;
     preGradScoreInfluence: number;
     creditsPerSubject: number;
     minCredit: number;
@@ -36,6 +37,12 @@ export type GenerationParams = {
     analysisPerformanceThresholds?: {
         high: number;
         mid: number;
+    };
+    seed?: number | string;
+    transitionShock?: {
+        hscMin: number;
+        maxSemesters: number;
+        drop: number;
     };
 };
 

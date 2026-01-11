@@ -1,4 +1,4 @@
-# **App Name**: DataForge AI
+# **App Name**: DataForge
 
 ## Core Features:
 

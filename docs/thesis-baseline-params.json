@@ -1,0 +1,31 @@
+{
+  "thesisBaseline": {
+    "numStudents": 5000,
+    "highPerformanceChance": 0.18,
+    "lowPerformanceChance": 0.12,
+    "minCredit": 9,
+    "stdCredit": 15,
+    "maxCredit": 21,
+    "attendanceImpact": 0.12,
+    "maxCreditImpact": 0.20,
+    "preGradDecay": 0.75,
+    "preGradScoreInfluence": 0.10,
+    "exceptionPercentage": 0.25,
+    "gradeScaleFile": "grade-scale.default.json"
+  },
+  "naturalDistribution": {
+    "numStudents": 5000,
+    "highPerformanceChance": 0.18,
+    "lowPerformanceChance": 0.12,
+    "minCredit": 9,
+    "stdCredit": 15,
+    "maxCredit": 21,
+    "attendanceImpact": 0.12,
+    "maxCreditImpact": 0.08,
+    "preGradDecay": 0.9,
+    "preGradScoreInfluence": 0.22,
+    "exceptionPercentage": 0.1,
+    "seed": "thesis-natural-01",
+    "gradeScaleFile": "grade-scale.default.json"
+  }
+}

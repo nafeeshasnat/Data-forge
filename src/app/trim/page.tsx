@@ -16,7 +16,7 @@ import { ThreeValueSlider } from "@/components/ui/three-value-slider";
 import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 import "@/components/app/slider-styles.css";
-import { StudentDatasetSchema } from "@/lib/schemas";
+import { StudentDatasetContainerSchema } from "@/lib/schemas";
 import { AcademicPerformance } from "@/components/app/academic-performance";
 import { performanceThresholds } from "@/lib/config";
 
@@ -49,7 +49,7 @@ export default function TrimPage() {
     try {
       const text = await selectedFile.text();
       const parsed = JSON.parse(text);
-      const result = StudentDatasetSchema.safeParse(parsed);
+      const result = StudentDatasetContainerSchema.safeParse(parsed);
       if (!result.success) {
         setFile(null);
         setAnalysis(null);

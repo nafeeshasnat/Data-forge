@@ -32,6 +32,14 @@ export const StudentSchema = z.object({
 
 export const StudentDatasetSchema = z.array(StudentSchema);
 
+export const StudentDatasetContainerSchema = z.union([
+  StudentDatasetSchema,
+  z.object({
+    students: StudentDatasetSchema,
+    meta: z.record(z.any()).optional(),
+  }),
+]);
+
 export const GradeScaleSchema = z.object({
   "A+": z.number(),
   "A": z.number(),

@@ -392,10 +392,15 @@ def main():
 
     # 2) Load and concatenate all student records.
     all_students = []
+    sources = []
     for file_path in file_paths:
         try:
             with open(file_path, 'r') as f:
                 data = json.load(f)
+                source_entry = {"file": os.path.basename(file_path)}
+                if isinstance(data, dict) and isinstance(data.get('meta'), dict):
+                    source_entry["meta"] = data.get('meta')
+                sources.append(source_entry)
                 if isinstance(data, dict) and 'students' in data:
                     students_to_extend = data['students']
                 elif isinstance(data, list):
@@ -472,8 +477,15 @@ def main():
         final_students_json.append(student_copy)
 
     # 9) Write JSON file to disk.
+    output_payload = {
+        "meta": {
+            "sources": sources
+        },
+        "students": final_students_json
+    }
+
     with open(output_path, 'w') as f:
-        json.dump(final_students_json, f, indent=2)
+        json.dump(output_payload, f, indent=2)
         
     # ---------------------------------------------
 
@@ -481,6 +493,7 @@ def main():
         "summary": summary,
         "insights": insights,
         "downloadFilename": download_filename,
+        "sources": sources,
         "params": {
             "std_credit": 18, 
             "max_credit_impact": 0.15,
