@@ -8,7 +8,7 @@ import { GenerationParams } from "@/lib/types";
 import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ThreeValueSlider } from "@/components/ui/three-value-slider";
-import { defaultParams } from '@/lib/config';
+import { defaultGenerationParams } from '@/lib/config';
 import { TrimDataDialog } from '@/components/app/trim-data-dialog';
 
 interface ParameterSidebarProps {
@@ -19,19 +19,7 @@ interface ParameterSidebarProps {
 }
 
 export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, isGenerating, onTrim, isDataPresent }) => {
-  const [params, setParams] = useState<GenerationParams>({
-    numStudents: defaultParams.studentCount,
-    creditsPerSubject: 3,
-    minCredit: defaultParams.minCredits,
-    stdCredit: defaultParams.initialCredits,
-    maxCredit: defaultParams.maxCredits,
-    maxCreditImpact: defaultParams.maxCreditImpact,
-    highPerformanceChance: 0.2,
-    lowPerformanceChance: 0.1,
-    preGradScoreInfluence: 0.2,
-    exceptionPercentage: 0.1,
-    attendanceImpact: defaultParams.attendanceImpact,
-  });
+  const [params, setParams] = useState<GenerationParams>({ ...defaultGenerationParams });
 
   const [distributionPoints, setDistributionPoints] = useState([params.lowPerformanceChance * 100, (1 - params.highPerformanceChance) * 100]);
 
@@ -51,12 +39,12 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
   const midPercentage = 100 - lowPercentage - highPercentage;
 
   return (
-    <Card className="h-full flex flex-col w-96">
+    <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Data Generation Parameters</CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow overflow-y-auto space-y-4">
-        <Accordion type="single" collapsible defaultValue="item-1">
+      <CardContent className="space-y-4">
+        <Accordion type="multiple" defaultValue={["item-1"]}>
           <AccordionItem value="item-1">
             <AccordionTrigger>Student Population</AccordionTrigger>
             <AccordionContent className="space-y-4 pt-2">

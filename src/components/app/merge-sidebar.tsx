@@ -48,7 +48,7 @@ export function MergeSidebar({
     };
 
     return (
-        <div className="p-4 space-y-4">
+        <div className="space-y-4">
             <Card>
                 <CardHeader>
                     <CardTitle>Upload Datasets</CardTitle>
@@ -84,19 +84,13 @@ export function MergeSidebar({
             <Card>
                 <CardHeader>
                     <CardTitle>Download Merged Data</CardTitle>
-                    <CardDescription>Download the merged dataset as a single JSON file.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Button asChild disabled={isLoading || !downloadPath} className="w-full">
+                    <Button asChild variant="outline" disabled={isLoading || !downloadPath} className="w-full">
                         <a href={downloadPath || undefined} download="merged_dataset.json">
-                            Download as JSON
+                            Download JSON
                         </a>
                     </Button>
-                    <p className="text-sm text-muted-foreground mt-2">
-                        {mergedStudentsCount > 0
-                            ? `${mergedStudentsCount} students processed.`
-                            : "Merge datasets to enable download."}
-                    </p>
                 </CardContent>
             </Card>
         </div>

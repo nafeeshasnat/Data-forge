@@ -1,23 +1,24 @@
 'use client';
 
-export const defaultParams = {
-  studentCount: 1000,
-  hscGpaMean: 4.5,
-  hscGpaStdDev: 0.3,
-  attendanceMean: 80,
-  attendanceStdDev: 15,
-  semesters: 9,
-  initialCredits: 12,
-  maxCredits: 22,
-  minCredits: 9,
-  semestersMean: 9,
-  semestersStdDev: 1.5,
-  attendanceImpact: 0.4,
-  hscGpaImpact: 0.45,
+import type { GenerationParams } from '@/lib/types';
+
+export const SUBJECT_COUNT = 60;
+
+export const defaultGenerationParams: GenerationParams = {
+  numStudents: 1000,
+  creditsPerSubject: 3,
+  minCredit: 9,
+  stdCredit: 12,
+  maxCredit: 22,
   maxCreditImpact: 0.05,
-  subjectCount: 60,
-  passingGrade: 2.0,
-  maxGrade: 4.0,
+  highPerformanceChance: 0.2,
+  lowPerformanceChance: 0.1,
+  preGradScoreInfluence: 0.2,
+  exceptionPercentage: 0.1,
+  attendanceImpact: 0.4,
 };
 
-export const SUBJECT_COUNT = defaultParams.subjectCount;
+export const performanceThresholds = {
+  high: 3.5,
+  mid: 2.0,
+};

@@ -1,15 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { BotMessageSquare, GitMerge, Loader2, Scissors, User } from 'lucide-react';
 import type { GenerationParams, AnalysisSummary } from '@/lib/types';
+import { StudentDatasetSchema } from '@/lib/schemas';
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { MergeSidebar } from '@/components/app/merge-sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/app/logo';
+import { Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 // Function to convert snake_case keys to camelCase
 const toCamelCase = (obj: any): any => {
@@ -28,6 +31,7 @@ const toCamelCase = (obj: any): any => {
 };
 
 export default function MergePage() {
+  const location = useLocation();
   const [files, setFiles] = useState<FileList | null>(null);
   const [summary, setSummary] = useState<AnalysisSummary | null>(null);
   const [insights, setInsights] = useState<string[]>([]);
@@ -37,10 +41,41 @@ export default function MergePage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [plotPoints, setPlotPoints] = useState<number>(80);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFiles(event.target.files);
+  const validateDatasetFile = async (file: File) => {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const result = StudentDatasetSchema.safeParse(parsed);
+    return result.success;
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) {
+      setFiles(null);
+      return;
+    }
+
+    try {
+      const validations = await Promise.all(Array.from(selectedFiles, validateDatasetFile));
+      if (validations.some((isValid) => !isValid)) {
+        toast({
+          variant: "destructive",
+          title: "Invalid dataset file",
+          description: "One or more files do not match the expected student dataset schema.",
+        });
+        setFiles(null);
+        return;
+      }
+      setFiles(selectedFiles);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to read file",
+        description: "Please upload valid JSON datasets.",
+      });
+      setFiles(null);
+    }
   };
 
   const handleMerge = async () => {
@@ -157,14 +192,19 @@ export default function MergePage() {
     });
   };
 
-  const handleBack = () => {
-    navigate('/');
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <aside className="w-96 h-full overflow-y-auto border-r">
-        <MergeSidebar 
+    <SidebarProvider>
+      <Sidebar className="border-r-0 md:w-96 md:border-r">
+        <SidebarHeader className="border-b p-4">
+          <Logo />
+        </SidebarHeader>
+        <SidebarContent className="p-4">
+          <MergeSidebar 
             onMerge={handleMerge} 
             onFileChange={handleFileChange}
             onJsonToText={handleJsonToText}
@@ -172,42 +212,76 @@ export default function MergePage() {
             mergedStudentsCount={summary?.totalStudents || 0}
             downloadPath={downloadPath}
             isLoading={isLoading}
-        />
-      </aside>
-      <main className="flex-1 p-6 overflow-auto">
-        <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">Merge and Analyze Datasets</h1>
-            <Button onClick={handleBack} variant="outline">Back to Main</Button>
-        </div>
-        {isLoading ? (
+          />
+        </SidebarContent>
+      </Sidebar>
+      <SidebarInset className="min-h-screen md:ml-96">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
+          <div className="flex items-center gap-4">
+            <SidebarTrigger className="md:hidden" />
+            <div className="flex items-center gap-2">
+              <GitMerge className="h-4 w-4 text-primary" />
+              <h1 className="text-lg font-semibold">Merge & Analyze</h1>
+            </div>
+          </div>
+          <nav className="hidden items-center gap-2 md:flex">
+            <Button asChild variant={isActive('/') ? "secondary" : "ghost"} size="icon" aria-label="Go to Generate" title="Generate">
+              <Link to="/" aria-current={isActive('/') ? "page" : undefined}>
+                <BotMessageSquare className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant={isActive('/single') ? "secondary" : "ghost"} size="icon" aria-label="Go to Single Student" title="Single Student">
+              <Link to="/single" aria-current={isActive('/single') ? "page" : undefined}>
+                <User className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant={isActive('/trim') ? "secondary" : "ghost"} size="icon" aria-label="Go to Trim" title="Trim">
+              <Link to="/trim" aria-current={isActive('/trim') ? "page" : undefined}>
+                <Scissors className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant={isActive('/merge') ? "secondary" : "ghost"} size="icon" aria-label="Go to Merge" title="Merge">
+              <Link to="/merge" aria-current={isActive('/merge') ? "page" : undefined}>
+                <GitMerge className="h-4 w-4" />
+              </Link>
+            </Button>
+          </nav>
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
+          {isLoading ? (
             <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
-        ) : plainText ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>JSON as Plain Text</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea value={plainText} readOnly rows={20} className="w-full p-2 font-mono" />
-            </CardContent>
-          </Card>
-        ) : summary ? (
+          ) : plainText ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>JSON as Plain Text</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea value={plainText} readOnly rows={20} className="w-full p-2 font-mono" />
+              </CardContent>
+            </Card>
+          ) : summary ? (
             <AcademicPerformance students={[]} summary={summary} params={params} insights={insights} isMergePage={true} />
-        ) : (
-            <div className="flex items-center justify-center h-full text-center p-8 border rounded-lg bg-card">
-                <div>
-                    <h2 className="text-xl font-semibold mb-2">Welcome to the Merge Page</h2>
-                    <p className="text-muted-foreground mb-4">
-                        Here you can combine multiple student dataset files (JSON format) into a single dataset for a comprehensive analysis or convert a single JSON file to plain text.
-                    </p>
-                    <p className="text-muted-foreground">
-                        Use the sidebar to upload your files, merge them, convert to text, and then download the combined dataset. You can also trim the data based on CGPA and percentage.
-                    </p>
-                </div>
+          ) : (
+            <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
+              <Card className="w-full max-w-md text-center">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Merge Datasets</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Combine multiple JSON datasets for a single analysis or convert a JSON file to plain text.
+                  </p>
+                  <p className="text-muted-foreground">
+                    Use the sidebar to upload your files, merge them, convert to text, and download the result.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
-        )}
-      </main>
-    </div>
+          )}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

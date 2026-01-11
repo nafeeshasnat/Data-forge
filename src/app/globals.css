@@ -90,3 +90,25 @@ body {
     }
   }
 }
+
+@layer base {
+  [data-sidebar="content"] {
+    scrollbar-color: hsl(var(--sidebar-accent)) transparent;
+    scrollbar-width: thin;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--sidebar-accent));
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+}

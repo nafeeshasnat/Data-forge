@@ -1,114 +1,172 @@
-e# DataForge AI
+# DataForge AI
 
-DataForge is a powerful and intuitive application for generating and analyzing synthetic student datasets. It provides a flexible platform for creating realistic and customizable data for educational research, software testing, and data analysis purposes.
+DataForge AI is a Vite + React application for generating, analyzing, trimming, and merging synthetic student datasets. It combines an in-browser data generation and analysis engine with optional Python-powered workflows for heavier dataset processing.
 
-## ✨ Key Features
+## Key Features
 
-- **Synthetic Data Generation:** Generate large, realistic datasets of student academic records with a single click.
-- **In-Depth Customization:** Fine-tune the data generation process with a wide range of parameters, including:
-    - Student population size
-    - Performance distribution (high, mid, low performers)
-    - Influence of pre-university scores
-    - Credit load and its impact on grades
-    - Attendance impact
-- **Advanced Analysis Engine:** Automatically analyzes the generated dataset to provide:
-    - Detailed statistical summaries.
-    - Actionable insights and observations about the data.
-    - Performance-based student profiling.
-- **Interactive Visualizations:** A comprehensive dashboard with interactive charts to explore:
-    - CGPA and credit hour distributions.
-    - Correlation between pre-grad GPA and university CGPA.
-    - Impact of credit load on academic performance.
-- **Data Manipulation:**
-    - **Trim:** Filter the dataset based on CGPA ranges to focus on specific cohorts.
-    - **Merge:** Combine two separately generated datasets for comparative analysis.
+- **Synthetic data generation** with adjustable population size, performance mix, credit load, attendance impact, and more.
+- **Deterministic analysis engine** that produces summary statistics, performance grouping, and data prepared for charts.
+- **Interactive dashboard** with CGPA distributions, department mix, HSC vs CGPA, credit load effects, attendance impact, semester counts, and more.
+- **Dataset trimming** by CGPA range (client-side in the main generator; server-side via Python on the trim page).
+- **Dataset merging** and re-analysis via Python scripts and an Express API.
+- **JSON-to-text conversion** for exporting a readable plain text summary of datasets.
+- **Downloadable JSON** datasets stripped of analysis-only fields.
 
-## 🚀 Getting Started
+## Tech Stack
+
+- **Frontend:** React 19, Vite, TypeScript, React Router
+- **Backend (local):** Express + TypeScript (`server/server.ts`)
+- **UI:** shadcn/ui, Tailwind CSS, Radix UI
+- **Charts:** Recharts
+- **Python (optional):** `pandas`, `numpy` for merge/trim/format scripts
+
+## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18.x or later)
-- npm or yarn
+- Node.js 18+
+- npm
+- Python 3 (required for merge/trim/json-to-text endpoints)
+- Python packages: `pandas`, `numpy`
 
-### Installation
+### Install
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-username/dataforge-ai.git
-    cd dataforge-ai
-    ```
+```bash
+npm install
+```
 
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
+### Development
 
-3.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
-    This will start both the front-end and back-end servers in development mode.
+```bash
+npm run dev
+```
 
-4.  Open your browser and navigate to `http://localhost:9002` to see the application in action.
+- Frontend: `http://localhost:9002`
+- Express API server: `http://localhost:3000`
 
-## 🛠️ Technology Stack
+### Build + Serve
 
-- **Frontend:** React, Vite, TypeScript
-- **Backend:** Express.js, TypeScript
-- **UI Components:** shadcn/ui, Tailwind CSS
-- **Data Visualization:** Recharts
-- **State Management:** React Hooks & Context API
-- **Linting & Formatting:** ESLint, Prettier
+```bash
+npm run build
+npm run start
+```
 
-## 🔧 How It Works
+## Scripts
 
-### Data Generation Pipeline
+- `npm run dev`: runs Vite and the Express server concurrently
+- `npm run dev:client`: runs Vite on port 9002
+- `npm run dev:server`: runs the Express API with tsx watch
+- `npm run build`: builds the server TypeScript and the Vite app
+- `npm run start` / `npm run serve`: serves the built app via Express
+- `npm run typecheck`: TypeScript type check
 
-1.  **Parameter Input:** The user sets various parameters through the sidebar UI, such as the number of students, performance distribution, and credit load impact.
-2.  **Stochastic Generation:** A synthetic dataset is generated based on these parameters. Each student's academic journey is simulated semester by semester. The process is stochastic, meaning each generation will produce a unique dataset. Key factors include:
-    *   **Performance Profile:** Students are initially categorized as high, mid, or low performers based on a probability distribution.
-    *   **CGPA Simulation:** A student's CGPA evolves over time, influenced by their performance profile, pre-university scores, and a degree of randomness.
-3.  **Analysis Engine:** Once generated, the dataset is fed into the analysis engine.
-4.  **Deterministic Analysis:** The engine processes the data deterministically to calculate summary statistics, generate qualitative insights, and prepare data for visualization.
-
-### Project Structure
-
-The project is organized into the following main directories:
+## Project Structure
 
 ```
-src
-├── app/              # Main application pages (data generation, merge)
-├── components/
-│   ├── app/          # Application-specific components (charts, sidebars)
-│   └── ui/           # Reusable UI components from shadcn/ui
-├── hooks/            # Custom React hooks (e.g., use-toast)
-├── lib/
-│   ├── data-generator.ts # Core data generation logic
-│   ├── engine/       # Analysis engine and insight generation
-│   ├── types.ts      # TypeScript type definitions
-│   └── config.ts     # Default parameters and app configuration
-└── styles/           # Global styles and Tailwind CSS setup
+src/
+  app/                       # Route-level pages (/, /merge, /trim)
+  components/
+    app/                     # App-specific UI (charts, dashboard, sidebar)
+    ui/                      # shadcn/ui components
+  hooks/                     # Custom hooks (toast, generation state)
+  lib/
+    data-generator.ts        # Synthetic data generation
+    engine/analysis-engine.ts # Deterministic analysis + trimming
+    chart-data-utils.ts      # Chart data helpers
+    config.ts                # Default parameters
+    subjects.ts              # Department + subject pools
+    types.ts                 # TypeScript types
+  scripts/                   # Python helpers for merge/trim/json-to-text
 server/
-├── server.ts         # Main Express.js server file
+  server.ts                  # Express server + API endpoints
+docs/
+  blueprint.md               # High-level product blueprint
+student_dataset.json         # Sample dataset
 ```
 
-## 🤝 Contributing
+## Routes
 
-Contributions are welcome! If you have suggestions for improvements or new features, feel free to open an issue or submit a pull request.
+- `/` (Main generator): parameter controls, dataset generation, dashboard, and client-side trim/download.
+- `/merge`: upload multiple JSON datasets, run Python merge + analysis, download merged output.
+- `/trim`: upload a JSON dataset, trim by CGPA range on the server, re-analyze, download output.
 
-1.  **Fork the repository.**
-2.  **Create a new branch:** `git checkout -b feat/your-feature-name`
-3.  **Make your changes.**
-4.  **Commit your changes:** `git commit -m 'feat: Add some amazing feature'`
-5.  **Push to the branch:** `git push origin feat/your-feature-name`
-6.  **Open a pull request.**
+Note: `src/app/upload/page.tsx` exists but is not wired into the router (`src/main.tsx`) and references a missing `@/app/actions` module.
 
-## 📄 License
+## Data Model
 
-This project is licensed under the MIT License. See the `LICENSE` file for more details.
+### Student
 
-## Future Work
+```ts
+{
+  student_id: number;
+  ssc_gpa: number;
+  hsc_gpa: number;
+  gender: "male" | "female";
+  birth_year: number;
+  department: string;
+  semesters: Record<string, Semester>;
+}
+```
 
-- More advanced statistical models for data generation.
-- Exporting data in different formats (CSV, Excel).
-- User authentication and saved configurations.
+### Semester
+
+```ts
+{
+  creditHours: number;
+  attendancePercentage: number;
+  [subjectName: string]: "A+" | "A" | "A-" | "B+" | "B" | "B-" | "C+" | "C" | "D" | "F";
+}
+```
+
+Derived fields added during analysis:
+- `cgpa`
+- `performanceGroup` (`High`, `Mid`, `Low`)
+- `avgCreditLoad`
+- `avgAttendance`
+- `semesterDetails` (per-semester GPA + credit load)
+
+## Generation Parameters
+
+Defined in `src/components/app/parameter-sidebar.tsx` and used by `src/lib/data-generator.ts`:
+
+- `numStudents`: total students to generate
+- `creditsPerSubject`: credits per subject (used in GPA calculations)
+- `minCredit`, `stdCredit`, `maxCredit`: per-semester credit range
+- `maxCreditImpact`: how much heavy credit load depresses GPA
+- `highPerformanceChance`, `lowPerformanceChance`: controls performance mix
+- `preGradScoreInfluence`: weight of SSC/HSC GPA on university GPA
+- `exceptionPercentage`: chance of exceptional performance swings
+- `attendanceImpact`: attendance effect on GPA
+
+## Analysis Engine
+
+`src/lib/engine/analysis-engine.ts` provides deterministic analytics:
+
+- CGPA calculation based on per-semester grades
+- Performance grouping (High/Mid/Low)
+- Summary stats: total students, avg HSC GPA, avg CGPA, department mix, performance mix, avg credit load, avg attendance
+- Deterministic trimming of a percentage of students in a CGPA range
+- Insights such as dominant performance group and CGPA vs HSC deltas
+
+## API Endpoints (Express)
+
+Defined in `server/server.ts` (used by the `/merge` page):
+
+- `POST /api/merge`: merge multiple JSON datasets and analyze using `src/scripts/merge_and_analyze.py`
+- `GET /api/download/:filename`: download merged output stored in the `tmp` directory
+- `POST /api/json-to-text`: convert JSON dataset to plain text via `src/scripts/json_to_text.py`
+
+The `/trim` page currently calls `/api/upload` and `/api/trim`, which are implemented as Next.js-style route files in `src/app/api`. These are not wired into the Express server and will not work unless you run the project in a Next.js runtime or add equivalent Express endpoints.
+
+## Python Scripts
+
+Located in `src/scripts`:
+
+- `merge_and_analyze.py`: merges datasets, normalizes schema, computes summaries and chart-ready aggregates
+- `trim_and_analyze.py`: trims a dataset by CGPA range and re-analyzes, writing a new JSON file to `tmp`
+- `json_to_text.py`: prints a human-readable view of a dataset
+
+## Notes
+
+- `server/server.js` appears to be an outdated/invalid build artifact and is not used by the TypeScript server.
+- `student_dataset.json` is a sample output dataset for testing.
