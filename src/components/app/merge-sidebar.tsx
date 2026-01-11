@@ -28,6 +28,14 @@ export function MergeSidebar({
     onAnalysisThresholdsChange,
     isLoading = false 
 }: MergeSidebarProps) {
+    const updateThreshold = (key: "high" | "mid", value: string) => {
+        const numericValue = Number(value);
+        onAnalysisThresholdsChange({
+            ...analysisThresholds,
+            [key]: Number.isFinite(numericValue) ? numericValue : analysisThresholds[key],
+        });
+    };
+
     return (
         <div className="space-y-4">
             <Card>
@@ -102,12 +110,7 @@ export function MergeSidebar({
                             type="number"
                             step="0.05"
                             value={analysisThresholds.high.toFixed(2)}
-                            onChange={(event) =>
-                                onAnalysisThresholdsChange({
-                                    ...analysisThresholds,
-                                    high: Number(event.target.value),
-                                })
-                            }
+                            onChange={(event) => updateThreshold("high", event.target.value)}
                         />
                     </div>
                     <div className="space-y-2">
@@ -117,12 +120,7 @@ export function MergeSidebar({
                             type="number"
                             step="0.05"
                             value={analysisThresholds.mid.toFixed(2)}
-                            onChange={(event) =>
-                                onAnalysisThresholdsChange({
-                                    ...analysisThresholds,
-                                    mid: Number(event.target.value),
-                                })
-                            }
+                            onChange={(event) => updateThreshold("mid", event.target.value)}
                         />
                     </div>
                 </CardContent>

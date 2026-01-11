@@ -225,6 +225,14 @@ export default function TrimPage() {
     }
   };
 
+  const updateThreshold = (key: "high" | "mid", value: string) => {
+    const numericValue = Number(value);
+    setAnalysisThresholds((prev) => ({
+      ...prev,
+      [key]: Number.isFinite(numericValue) ? numericValue : prev[key],
+    }));
+  };
+
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
     return location.pathname.startsWith(path);
@@ -298,12 +306,7 @@ export default function TrimPage() {
                   type="number"
                   step="0.05"
                   value={analysisThresholds.high.toFixed(2)}
-                  onChange={(event) =>
-                    setAnalysisThresholds({
-                      ...analysisThresholds,
-                      high: Number(event.target.value),
-                    })
-                  }
+                  onChange={(event) => updateThreshold("high", event.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -313,12 +316,7 @@ export default function TrimPage() {
                   type="number"
                   step="0.05"
                   value={analysisThresholds.mid.toFixed(2)}
-                  onChange={(event) =>
-                    setAnalysisThresholds({
-                      ...analysisThresholds,
-                      mid: Number(event.target.value),
-                    })
-                  }
+                  onChange={(event) => updateThreshold("mid", event.target.value)}
                 />
               </div>
             </CardContent>

@@ -21,6 +21,7 @@ console.log(`[Server] Using python at: ${pythonCommand}`);
 
 const MAX_TMP_FILE_AGE_MS = 1000 * 60 * 60 * 6; // 6 hours
 const activeMergedDownloads = new Set<string>();
+const activeTrimmedDownloads = new Set<string>();
 
 const cleanupOldFiles = (dirPath: string, maxAgeMs: number) => {
     try {
@@ -63,6 +64,26 @@ const cleanupMergedFiles = (excludeFilenames: Set<string>) => {
         });
     } catch (error) {
         console.error(`[Server] Failed to cleanup merged files in ${tmpDir}:`, error);
+    }
+};
+
+const cleanupTrimmedFiles = (excludeFilenames: Set<string>) => {
+    try {
+        if (!fs.existsSync(tmpDir)) return;
+        const entries = fs.readdirSync(tmpDir);
+        entries.forEach((entry) => {
+            if (!entry.startsWith('trimmed_data_')) return;
+            if (excludeFilenames.has(entry)) return;
+            const fullPath = path.join(tmpDir, entry);
+            try {
+                fs.unlinkSync(fullPath);
+                console.log(`[Server] Cleaned trimmed file: ${fullPath}`);
+            } catch (error) {
+                console.error(`[Server] Failed to delete trimmed file ${fullPath}:`, error);
+            }
+        });
+    } catch (error) {
+        console.error(`[Server] Failed to cleanup trimmed files in ${tmpDir}:`, error);
     }
 };
 
@@ -114,6 +135,7 @@ app.post('/api/merge', upload.array('files'), (req, res) => {
     cleanupOldFiles(uploadDir, MAX_TMP_FILE_AGE_MS);
     cleanupOldFiles(tmpDir, MAX_TMP_FILE_AGE_MS);
     cleanupMergedFiles(activeMergedDownloads);
+    cleanupTrimmedFiles(activeTrimmedDownloads);
 
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
@@ -148,7 +170,6 @@ app.post('/api/merge', upload.array('files'), (req, res) => {
     let stderr = '';
 
     pythonProcess.stdout.on('data', (data) => {
-        console.log(`[Python] stdout: ${data}`);
         stdout += data.toString();
     });
 
@@ -177,7 +198,7 @@ app.post('/api/merge', upload.array('files'), (req, res) => {
             res.json(result);
         } catch (parseError) {
             console.error("[API /api/merge] Failed to parse python script output:", parseError);
-            console.error("[API /api/merge] Raw stdout:", stdout);
+            console.error("[API /api/merge] Raw stdout (truncated):", stdout.slice(0, 500));
             res.status(500).json({ error: 'Failed to parse script output', details: stdout });
         }
     });
@@ -196,12 +217,18 @@ app.get('/api/download/:filename', (req, res) => {
 
     if (fs.existsSync(filePath)) {
         console.log(`[API /api/download] File found. Sending file: ${filePath}`);
-        if (filename.startsWith('merged_data_')) {
+        if (filename.startsWith('merged_')) {
             activeMergedDownloads.add(filename);
         }
+        if (filename.startsWith('trimmed_data_')) {
+            activeTrimmedDownloads.add(filename);
+        }
         res.download(filePath, (err) => {
-            if (filename.startsWith('merged_data_')) {
+            if (filename.startsWith('merged_')) {
                 activeMergedDownloads.delete(filename);
+            }
+            if (filename.startsWith('trimmed_data_')) {
+                activeTrimmedDownloads.delete(filename);
             }
             if (err) {
                 console.error(`[API /api/download] Error sending file:`, err);
@@ -226,6 +253,7 @@ app.get('/api/download/:filename', (req, res) => {
 app.post('/api/upload', trimUpload.single('file'), (req, res) => {
     console.log("[API /api/upload] Received request to upload file for trimming.");
     cleanupOldFiles(tmpDir, MAX_TMP_FILE_AGE_MS);
+    cleanupTrimmedFiles(activeTrimmedDownloads);
 
     const file = req.file;
     if (!file) {
@@ -240,6 +268,7 @@ app.post('/api/upload', trimUpload.single('file'), (req, res) => {
 // API endpoint for trimming and analyzing a dataset
 app.post('/api/trim', express.json(), (req, res) => {
     console.log("[API /api/trim] Received request to trim dataset.");
+    cleanupTrimmedFiles(activeTrimmedDownloads);
 
     const { filename, minCgpa, maxCgpa, percentage, perfHigh, perfMid } = req.body || {};
     if (!filename) {
@@ -296,7 +325,7 @@ app.post('/api/trim', express.json(), (req, res) => {
             res.json({ success: true, ...result });
         } catch (parseError) {
             console.error("[API /api/trim] Failed to parse python script output:", parseError);
-            console.error("[API /api/trim] Raw stdout:", stdout);
+            console.error("[API /api/trim] Raw stdout (truncated):", stdout.slice(0, 500));
             res.status(500).json({ success: false, error: 'Failed to parse script output', details: stdout });
         }
     });
