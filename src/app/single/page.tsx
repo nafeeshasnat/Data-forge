@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { BarChart3, BotMessageSquare, GitMerge, Scissors, User } from "lucide-react";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Logo } from "@/components/app/logo";
+import { useLocation } from "react-router-dom";
+import { User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -13,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { defaultGenerationParams } from "@/lib/config";
 import { generateSingleStudent } from "@/lib/data-generator";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
+import { AppShell } from "@/components/app/app-shell";
 
 type PerformanceGroup = "High" | "Mid" | "Low";
 
@@ -122,18 +121,13 @@ export default function SingleStudentPage() {
     [semesters]
   );
 
-  const isActive = (path: string) => {
-    if (path === "/") return location.pathname === "/";
-    return location.pathname.startsWith(path);
-  };
-
   return (
-    <SidebarProvider>
-      <Sidebar className="border-r-0 md:w-96 md:border-r">
-        <SidebarHeader className="border-b p-4">
-          <Logo />
-        </SidebarHeader>
-        <SidebarContent className="p-4 space-y-4">
+    <AppShell
+      title="Single Student"
+      icon={<User className="h-4 w-4 text-primary" />}
+      pathname={location.pathname}
+      sidebar={(
+        <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Performance Profile</CardTitle>
@@ -209,132 +203,93 @@ export default function SingleStudentPage() {
               </Button>
             </CardContent>
           </Card>
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset className="min-h-screen md:ml-96">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-          <div className="flex items-center gap-4">
-            <SidebarTrigger className="md:hidden" />
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-primary" />
-              <h1 className="text-lg font-semibold">Single Student</h1>
+        </div>
+      )}
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle>GPA Trend</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={gpaTrendData}>
+                <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" />
+                <YAxis domain={[0, 4]} />
+                <Tooltip />
+                <Line type="monotone" dataKey="gpa" stroke="hsl(var(--primary))" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Credits vs CGPA</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart>
+                  <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
+                  <XAxis type="number" dataKey="credits" name="Credits" />
+                  <YAxis type="number" dataKey="gpa" name="CGPA" domain={[0, 4]} />
+                  <Tooltip />
+                  <ReferenceLine x={averageCredits} stroke="#dc2626" strokeDasharray="2 4" />
+                  <Scatter data={creditLoadData} fill="#dc2626" />
+                </ScatterChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-          <nav className="hidden items-center gap-2 md:flex">
-            <Button asChild variant={isActive("/") ? "secondary" : "ghost"} size="icon" aria-label="Go to Generate" title="Generate">
-              <Link to="/" aria-current={isActive("/") ? "page" : undefined}>
-                <BotMessageSquare className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant={isActive("/single") ? "secondary" : "ghost"} size="icon" aria-label="Go to Single Student" title="Single Student">
-              <Link to="/single" aria-current={isActive("/single") ? "page" : undefined}>
-                <User className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant={isActive("/trim") ? "secondary" : "ghost"} size="icon" aria-label="Go to Trim" title="Trim">
-              <Link to="/trim" aria-current={isActive("/trim") ? "page" : undefined}>
-                <Scissors className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant={isActive("/merge") ? "secondary" : "ghost"} size="icon" aria-label="Go to Merge" title="Merge">
-              <Link to="/merge" aria-current={isActive("/merge") ? "page" : undefined}>
-                <GitMerge className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant={isActive("/analysis") ? "secondary" : "ghost"} size="icon" aria-label="Go to Analysis" title="Analysis">
-              <Link to="/analysis" aria-current={isActive("/analysis") ? "page" : undefined}>
-                <BarChart3 className="h-4 w-4" />
-              </Link>
-            </Button>
-          </nav>
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>GPA Trend</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={gpaTrendData}>
-                    <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" />
-                    <YAxis domain={[0, 4]} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="gpa" stroke="hsl(var(--primary))" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Credits vs CGPA</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ScatterChart>
-                      <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
-                      <XAxis type="number" dataKey="credits" name="Credits" />
-                      <YAxis type="number" dataKey="gpa" name="CGPA" domain={[0, 4]} />
-                      <Tooltip />
-                      <ReferenceLine x={averageCredits} stroke="#dc2626" strokeDasharray="2 4" />
-                      <Scatter data={creditLoadData} fill="#dc2626" />
-                    </ScatterChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Attendance & Grade Change Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={attendanceData}>
-                      <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="name" />
-                      <YAxis
-                        yAxisId="attendance"
-                        domain={[0, 100]}
-                        tickFormatter={(value) => `${value}%`}
-                      />
-                      <YAxis
-                        yAxisId="grade"
-                        orientation="right"
-                        domain={["dataMin - 50", "dataMax + 50"]}
-                        tickFormatter={(value) => `${value}%`}
-                      />
-                      <Tooltip />
-                      <Line
-                        yAxisId="attendance"
-                        type="monotone"
-                        dataKey="attendance"
-                        stroke="#7c3aed"
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
-                      <Line
-                        yAxisId="grade"
-                        type="monotone"
-                        dataKey="gradeChangeRate"
-                        stroke="#a78bfa"
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Attendance & Grade Change Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={attendanceData}>
+                  <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" />
+                  <YAxis
+                    yAxisId="attendance"
+                    domain={[0, 100]}
+                    tickFormatter={(value) => `${value}%`}
+                  />
+                  <YAxis
+                    yAxisId="grade"
+                    orientation="right"
+                    domain={["dataMin - 50", "dataMax + 50"]}
+                    tickFormatter={(value) => `${value}%`}
+                  />
+                  <Tooltip />
+                  <Line
+                    yAxisId="attendance"
+                    type="monotone"
+                    dataKey="attendance"
+                    stroke="#7c3aed"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line
+                    yAxisId="grade"
+                    type="monotone"
+                    dataKey="gradeChangeRate"
+                    stroke="#a78bfa"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </AppShell>
   );
 }

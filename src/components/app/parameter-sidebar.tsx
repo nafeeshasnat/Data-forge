@@ -139,11 +139,21 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
                 </div>
                 <div className="space-y-2">
                     <Label>Pre-Grad Score Influence: {params.preGradScoreInfluence.toFixed(2)}</Label>
-                    <Slider min={0} max={1} step={0.05} value={[params.preGradScoreInfluence]} onValueChange={(v) => setParams(p => ({...p, preGradScoreInfluence: v[0]}))} />
+                    <Slider min={-1} max={1} step={0.05} value={[params.preGradScoreInfluence]} onValueChange={(v) => setParams(p => ({...p, preGradScoreInfluence: v[0]}))} />
                 </div>
                 <div className="space-y-2">
                     <Label>Exception Percentage: {params.exceptionPercentage.toFixed(2)}</Label>
                     <Slider min={0} max={1} step={0.05} value={[params.exceptionPercentage]} onValueChange={(v) => setParams(p => ({...p, exceptionPercentage: v[0]}))} />
+                </div>
+                <div className="space-y-2">
+                    <Label>Perfect Scorer Chance: {(params.perfectScorerChance ?? 0.8).toFixed(2)}</Label>
+                    <Slider
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={[params.perfectScorerChance ?? 0.8]}
+                      onValueChange={(v) => setParams(p => ({ ...p, perfectScorerChance: v[0] }))}
+                    />
                 </div>
                 <div className="space-y-2">
                   <Label>Attendance Impact: {params.attendanceImpact.toFixed(2)}</Label>

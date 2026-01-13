@@ -5,11 +5,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BotMessageSquare } from "lucide-react";
 
 interface AiInsightsProps {
-  insights: string;
+  insights: string | string[];
   isLoading: boolean;
 }
 
 export function AiInsights({ insights, isLoading }: AiInsightsProps) {
+  const content = Array.isArray(insights) ? insights.join(' ') : insights;
   return (
     <Card className="bg-accent/50 border-accent">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -27,7 +28,7 @@ export function AiInsights({ insights, isLoading }: AiInsightsProps) {
           </div>
         ) : (
           <p className="text-sm text-accent-foreground pt-2">
-            {insights}
+            {content}
           </p>
         )}
       </CardContent>

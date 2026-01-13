@@ -22,7 +22,7 @@ interface AcademicPerformanceProps {
   students: StudentWithCgpa[];
   summary: AnalysisSummary;
   params: GenerationParams | null;
-  insights: string[];
+  insights?: string[];
   isMergePage?: boolean;
 }
 
@@ -79,7 +79,17 @@ function StatsGrid({ summary, params }: { summary: AnalysisSummary, params: Gene
     );
 }
 
-export function AcademicPerformance({ students, summary, params, insights, isMergePage = false }: AcademicPerformanceProps) {
+export function AcademicPerformance({ students, summary, params, insights = [], isMergePage = false }: AcademicPerformanceProps) {
+  const normalizeDistribution = (distribution: unknown) => {
+    if (Array.isArray(distribution)) return distribution as { name: string; value: number }[];
+    if (distribution && typeof distribution === 'object') {
+      return Object.entries(distribution as Record<string, number>).map(([name, value]) => ({
+        name,
+        value: Number(value),
+      }));
+    }
+    return [] as { name: string; value: number }[];
+  };
   const creditLoadVsGradeData: CreditLoadVsGradeData[] = useMemo(() => {
     if (isMergePage) {
         return summary.creditLoadVsGrade || [];
@@ -108,16 +118,16 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
     return getCreditDistributionChartData(students);
     }, [students, summary, isMergePage]);
 
-    const performanceDistributionChartData = useMemo(() => {
+  const performanceDistributionChartData = useMemo((): { name: string; value: number }[] => {
       if (isMergePage) {
-        return summary.performanceDistribution || [];
+        return normalizeDistribution(summary.performanceDistribution);
       }
       return getPerformanceDistributionChartData(summary);
     }, [summary, isMergePage]);
     
-    const departmentDistributionChartData = useMemo(() => {
+    const departmentDistributionChartData = useMemo((): { name: string; value: number }[] => {
       if (isMergePage) {
-        return summary.departmentDistribution || [];
+        return normalizeDistribution(summary.departmentDistribution);
       }
       return getDepartmentDistributionChartData(summary);
     }, [summary, isMergePage]);
@@ -153,7 +163,7 @@ export function AcademicPerformance({ students, summary, params, insights, isMer
 
       <Card>
         <CardHeader>
-          <CardTitle>HSC vs CGPA</CardTitle>
+          <CardTitle>{isMergePage ? "Pre-Grad GPA vs CGPA" : "Pre-Grad GPA vs CGPA"}</CardTitle>
         </CardHeader>
         <CardContent>
           {isMergePage ? (

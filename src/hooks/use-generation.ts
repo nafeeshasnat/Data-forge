@@ -1,15 +1,12 @@
 import { useState } from 'react';
 import { generateDataAction, processUploadedData } from '@/app/actions';
+import { defaultGenerationParams } from '@/lib/config';
 import type { GenerationParams, GenerationResult, Student } from '@/lib/types';
 
 export function useGeneration() {
   const [params, setParams] = useState<GenerationParams>({
+    ...defaultGenerationParams,
     numStudents: 250,
-    creditsPerSubject: 3,
-    minCredit: 9,
-    stdCredit: 15,
-    maxCredit: 21,
-    maxCreditImpact: 0.1,
     highPerformanceChance: 0.2,
     failChance: 0.1,
     preGradScoreInfluence: 0.5,

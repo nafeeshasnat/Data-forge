@@ -59,9 +59,9 @@ export function Dashboard({ result, isLoading, params }: DashboardProps) {
   return (
     <div className="space-y-8">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Total Students" value={summary.totalStudents} description="Number of students in the dataset" />
-            <StatCard title="Avg. CGPA" value={summary.avgCgpa} description="Across all departments and years" />
-            <StatCard title="Avg. HSC GPA" value={summary.avgHscGpa} description="From the initial student profiles" />
+            <StatCard title="Total Students" value={summary.totalStudents ?? 0} description="Number of students in the dataset" />
+            <StatCard title="Avg. CGPA" value={summary.avgCgpa ?? 0} description="Across all departments and years" />
+            <StatCard title="Avg. HSC GPA" value={summary.avgHscGpa ?? 0} description="From the initial student profiles" />
             <AiInsights insights={insights} isLoading={isLoading} />
         </div>
       

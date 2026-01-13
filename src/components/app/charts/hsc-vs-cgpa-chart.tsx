@@ -7,6 +7,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  ReferenceLine,
   Tooltip,
   Label,
   ResponsiveContainer,
@@ -33,19 +34,25 @@ export function HscVsCgpaChart({ students }: HscVsCgpaChartProps) {
   return (
     <Card className='col-span-1'>
       <CardHeader>
-        <CardTitle>HSC GPA vs. University CGPA</CardTitle>
-        <CardDescription>A scatter plot showing the correlation between HSC GPA and university CGPA.</CardDescription>
+        <CardTitle>Pre-Grad GPA vs. University CGPA</CardTitle>
+        <CardDescription>A scatter plot showing the correlation between average SSC/HSC GPA and university CGPA.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[350px] w-full">
           <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis type="number" dataKey="hscGpa" domain={[2, 5]} tickFormatter={(tick) => tick.toFixed(1)}>
-              <Label value="HSC GPA" offset={-15} position="insideBottom" />
+            <XAxis type="number" dataKey="preGradGpa" domain={[2, 5]} tickFormatter={(tick) => tick.toFixed(1)}>
+              <Label value="Pre-Grad GPA (Avg SSC/HSC)" offset={-15} position="insideBottom" />
             </XAxis>
             <YAxis type="number" dataKey="cgpa" domain={[0, 4]} tickFormatter={(tick) => tick.toFixed(1)}>
               <Label value="University CGPA" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
             </YAxis>
+            <ReferenceLine
+              y={2.0}
+              stroke="#ef4444"
+              strokeDasharray="6 6"
+              ifOverflow="extendDomain"
+            />
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator="dot" />}

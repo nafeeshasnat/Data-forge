@@ -106,9 +106,9 @@ function shuffle<T>(rng: Rng, array: T[]): T[] {
 const choice = <T>(rng: Rng, arr: T[]): T => arr[Math.floor(rng.random() * arr.length)];
 
 const PERFORMANCE_BOUNDARIES: Record<PerformanceGroup, { ssc: [number, number], hsc: [number, number], uni: [number, number] }> = {
-    High: { ssc: [3.6, 5.0], hsc: [3.6, 5.0], uni: [3.2, 4.0] },
-    Mid:  { ssc: [2.6, 4.2], hsc: [2.6, 4.2], uni: [2.6, 3.6] },
-    Low:  { ssc: [2.0, 3.6], hsc: [2.0, 3.6], uni: [2.0, 3.2] },
+  High: { ssc: [3.6, 5.0], hsc: [3.6, 5.0], uni: [3.2, 4.0] },
+  Mid: { ssc: [2.6, 4.2], hsc: [2.6, 4.2], uni: [2.6, 3.6] },
+  Low: { ssc: [2.0, 3.6], hsc: [2.0, 3.6], uni: [2.0, 3.2] },
 };
 
 function selectPerformanceGroup(rng: Rng, params: GenerationParams): PerformanceGroup {
@@ -121,9 +121,9 @@ function selectPerformanceGroup(rng: Rng, params: GenerationParams): Performance
 }
 
 function getExceptionalPerformanceGroup(rng: Rng, originalGroup: PerformanceGroup): PerformanceGroup {
-    if (originalGroup === 'High') return 'Low';
-    if (originalGroup === 'Low') return 'High';
-    return rng.random() < 0.5 ? 'High' : 'Low';
+  if (originalGroup === 'High') return 'Low';
+  if (originalGroup === 'Low') return 'High';
+  return rng.random() < 0.5 ? 'High' : 'Low';
 }
 
 function generateGpaInBounds(rng: Rng, group: PerformanceGroup, type: 'ssc' | 'hsc'): number {
@@ -136,6 +136,24 @@ function gpaToGrade(gpa: number, gradeScaleTuples: [Grade, number][]): Grade {
     if (gpa >= value) return grade;
   }
   return "F";
+}
+
+function gradeForTargetGpa(rng: Rng, targetGpa: number, gradeScaleTuples: [Grade, number][]): Grade {
+  if (gradeScaleTuples.length === 0) return "F";
+  if (targetGpa >= gradeScaleTuples[0][1]) return gradeScaleTuples[0][0];
+
+  for (let i = 0; i < gradeScaleTuples.length - 1; i += 1) {
+    const [upperGrade, upperValue] = gradeScaleTuples[i];
+    const [lowerGrade, lowerValue] = gradeScaleTuples[i + 1];
+    if (targetGpa >= lowerValue) {
+      const span = upperValue - lowerValue;
+      if (span <= 0) return upperGrade;
+      const upperChance = (targetGpa - lowerValue) / span;
+      return rng.random() < upperChance ? upperGrade : lowerGrade;
+    }
+  }
+
+  return gradeScaleTuples[gradeScaleTuples.length - 1][0];
 }
 
 function creditImpact(credits: number, params: GenerationParams): number {
@@ -199,11 +217,15 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     const department = choice(rng, DEPARTMENTS);
     const ssc_gpa = parseFloat(generateGpaInBounds(rng, performanceGroup, 'ssc').toFixed(2));
     const hsc_gpa = parseFloat(generateGpaInBounds(rng, performanceGroup, 'hsc').toFixed(2));
-    
+
     const preGradUniGpa = ((ssc_gpa / 5.0) + (hsc_gpa / 5.0)) / 2 * 4.0;
 
-    const isPerfectScorer = performanceGroup === 'High' && preGradUniGpa > 3.8 && rng.random() < 0.8;
-    
+    const perfectChance = params.perfectScorerChance ?? 0.8;
+    const isPerfectScorer = performanceGroup === 'High' && preGradUniGpa > 3.75 && rng.random() < perfectChance;
+    const perfectScorerTargetGpa = isPerfectScorer && rng.random() < 0.8
+      ? uniform(rng, 3.80, 3.99)
+      : 4.0;
+
     const fullSubjectPool = generateSubjectPool(department);
     const studentSubjectPool = shuffle(rng, [...fullSubjectPool]).slice(0, SUBJECT_COUNT);
 
@@ -220,23 +242,23 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
       );
       const actualCredits = subjectCount * params.creditsPerSubject;
       const semesterSubjects = subjectsToAssign.splice(0, subjectCount);
-    
+
       // --- PreGrad decay and accumulated GPA impact ---
       const preGradDecay = params.preGradDecay ?? 0.9; // decay per semester
       const w_preGrad = Math.pow(preGradDecay, semesterId - 1);
       const w_accum = 1 - w_preGrad;
-    
+
       let semesterGpa: number;
       const attendancePercentage = Math.round(
         Math.max(0, Math.min(100, studentBaseAttendance + uniform(rng, -2.5, 2.5)))
       );
-    
+
       if (isPerfectScorer) {
-        semesterGpa = 4.0;
+        semesterGpa = perfectScorerTargetGpa;
       } else {
         // Base GPA influenced by pre-grad and previous semesters
         let baseGpa = preGradUniGpa * w_preGrad + prevAccumulatedGpa * w_accum;
-    
+
         // Random noise per semester
         baseGpa += uniform(rng, -0.2, 0.2);
 
@@ -247,44 +269,47 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
         ) {
           baseGpa -= params.transitionShock.drop;
         }
-    
+
         // Exceptional performance adjustment
         if (performanceGroup !== 'High' && rng.random() < params.exceptionPercentage) {
           const exceptionalSwing = 0.35;
           baseGpa += getExceptionalPerformanceGroup(rng, performanceGroup) === 'High' ? exceptionalSwing : -exceptionalSwing;
         }
-    
+
         // High performer "perfect score push"
         if (performanceGroup === 'High') {
           const perfectScorePush = (preGradUniGpa / 4.0) * params.preGradScoreInfluence;
           baseGpa = baseGpa * (1 - perfectScorePush) + 4.0 * perfectScorePush;
         }
-    
-        // Credit and attendance impact
-        semesterGpa = baseGpa + creditImpact(actualCredits, params);
-        const attendanceImpact = (attendancePercentage - 82.5) / 17.5 * params.attendanceImpact;
+
+        // Credit and attendance impact (soften negative pulls near the top end)
+        const impactScale = baseGpa >= 3.6 ? 0.6 : baseGpa >= 3.3 ? 0.8 : 1.0;
+        semesterGpa = baseGpa + creditImpact(actualCredits, params) * impactScale;
+        const attendanceImpact = (attendancePercentage - 82.5) / 17.5 * params.attendanceImpact * impactScale;
         semesterGpa += attendanceImpact;
-    
+
         // Clamp GPA
         semesterGpa = Math.max(0.0, Math.min(4.0, semesterGpa));
       }
-    
+
       // Update accumulated GPA
       prevAccumulatedGpa = ((prevAccumulatedGpa * (semesterId - 1)) + semesterGpa) / semesterId;
-    
+
       // --- Assign grades to subjects ---
       const semesterData: Semester = {
         creditHours: actualCredits,
         attendancePercentage: attendancePercentage
       };
-    
+
       for (const subject of semesterSubjects) {
         let finalGpaForSubject = isPerfectScorer
-          ? 4.0
-          : Math.max(0, Math.min(4.0, semesterGpa + uniform(rng, -0.1, 0.1)));
-        semesterData[subject] = gpaToGrade(finalGpaForSubject, normalizedGradeScaleTuples);
+          ? perfectScorerTargetGpa
+          : Math.max(0, Math.min(4.0, semesterGpa + uniform(rng, -0.10, 0.10)));
+        semesterData[subject] = isPerfectScorer
+          ? gradeForTargetGpa(rng, finalGpaForSubject, normalizedGradeScaleTuples)
+          : gpaToGrade(finalGpaForSubject, normalizedGradeScaleTuples);
       }
-    
+
       semesters[String(semesterId)] = semesterData;
       semesterId++;
     }
@@ -325,7 +350,11 @@ export function generateSingleStudent(
   const ssc_gpa = parseFloat(generateGpaInBounds(rng, options.performanceGroup, 'ssc').toFixed(2));
   const hsc_gpa = parseFloat(generateGpaInBounds(rng, options.performanceGroup, 'hsc').toFixed(2));
   const preGradUniGpa = ((ssc_gpa / 5.0) + (hsc_gpa / 5.0)) / 2 * 4.0;
-  const isPerfectScorer = options.performanceGroup === 'High' && preGradUniGpa > 3.8 && rng.random() < 0.8;
+  const perfectChance = params.perfectScorerChance ?? 0.8;
+  const isPerfectScorer = options.performanceGroup === 'High' && preGradUniGpa > 3.8 && rng.random() < perfectChance;
+  const perfectScorerTargetGpa = isPerfectScorer && rng.random() < 0.5
+    ? uniform(rng, 3.8, 3.9)
+    : 4.0;
 
   const fullSubjectPool = generateSubjectPool(department);
   const studentSubjectPool = shuffle(rng, [...fullSubjectPool]).slice(0, SUBJECT_COUNT);
@@ -358,7 +387,7 @@ export function generateSingleStudent(
     );
 
     if (isPerfectScorer) {
-      semesterGpa = 4.0;
+      semesterGpa = perfectScorerTargetGpa;
     } else {
       let baseGpa = preGradUniGpa * w_preGrad + prevAccumulatedGpa * w_accum;
       baseGpa += uniform(rng, -0.2, 0.2);
@@ -387,8 +416,9 @@ export function generateSingleStudent(
         maxCreditImpact: options.maxCreditImpact ?? params.maxCreditImpact,
       };
 
-      semesterGpa = baseGpa + creditImpact(actualCredits, effectiveParams);
-      const attendanceImpact = (attendancePercentage - 82.5) / 17.5 * effectiveParams.attendanceImpact;
+      const impactScale = baseGpa >= 3.6 ? 0.6 : baseGpa >= 3.3 ? 0.8 : 1.0;
+      semesterGpa = baseGpa + creditImpact(actualCredits, effectiveParams) * impactScale;
+      const attendanceImpact = (attendancePercentage - 82.5) / 17.5 * effectiveParams.attendanceImpact * impactScale;
       semesterGpa += attendanceImpact;
       semesterGpa = Math.max(0.0, Math.min(4.0, semesterGpa));
     }
@@ -402,9 +432,11 @@ export function generateSingleStudent(
 
     for (const subject of semesterSubjects) {
       const finalGpaForSubject = isPerfectScorer
-        ? 4.0
+        ? perfectScorerTargetGpa
         : Math.max(0, Math.min(4.0, semesterGpa + uniform(rng, -0.1, 0.1)));
-      semesterData[subject] = gpaToGrade(finalGpaForSubject, normalizedGradeScaleTuples);
+      semesterData[subject] = isPerfectScorer
+        ? gradeForTargetGpa(rng, finalGpaForSubject, normalizedGradeScaleTuples)
+        : gpaToGrade(finalGpaForSubject, normalizedGradeScaleTuples);
     }
 
     semesters[String(semesterId)] = semesterData;

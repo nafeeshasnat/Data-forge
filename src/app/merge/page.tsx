@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, BotMessageSquare, GitMerge, Loader2, Scissors, User } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { GitMerge, Loader2 } from 'lucide-react';
 import type { GenerationParams, AnalysisSummary } from '@/lib/types';
 import { performanceThresholds } from '@/lib/config';
 import { StudentDatasetContainerSchema } from '@/lib/schemas';
@@ -10,9 +10,7 @@ import { AcademicPerformance } from '@/components/app/academic-performance';
 import { MergeSidebar } from '@/components/app/merge-sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/app/logo';
-import { Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppShell } from '@/components/app/app-shell';
 
 // Function to convert snake_case keys to camelCase
 const toCamelCase = (obj: any): any => {
@@ -144,93 +142,47 @@ export default function MergePage() {
   };
 
 
-  const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
-  };
-
   return (
-    <SidebarProvider>
-      <Sidebar className="border-r-0 md:w-96 md:border-r">
-        <SidebarHeader className="border-b p-4">
-          <Logo />
-        </SidebarHeader>
-        <SidebarContent className="p-4">
-          <MergeSidebar 
-            onMerge={handleMerge} 
-            onFileChange={handleFileChange}
-            mergedStudentsCount={summary?.totalStudents || 0}
-            downloadPath={downloadPath}
-            downloadFilename={downloadFilename}
-            analysisThresholds={analysisThresholds}
-            onAnalysisThresholdsChange={setAnalysisThresholds}
-            isLoading={isLoading}
-          />
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset className="min-h-screen md:ml-96">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-          <div className="flex items-center gap-4">
-            <SidebarTrigger className="md:hidden" />
-            <div className="flex items-center gap-2">
-              <GitMerge className="h-4 w-4 text-primary" />
-              <h1 className="text-lg font-semibold">Merge & Analyze</h1>
-            </div>
-          </div>
-          <nav className="hidden items-center gap-2 md:flex">
-            <Button asChild variant={isActive('/') ? "secondary" : "ghost"} size="icon" aria-label="Go to Generate" title="Generate">
-              <Link to="/" aria-current={isActive('/') ? "page" : undefined}>
-                <BotMessageSquare className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant={isActive('/single') ? "secondary" : "ghost"} size="icon" aria-label="Go to Single Student" title="Single Student">
-              <Link to="/single" aria-current={isActive('/single') ? "page" : undefined}>
-                <User className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant={isActive('/trim') ? "secondary" : "ghost"} size="icon" aria-label="Go to Trim" title="Trim">
-              <Link to="/trim" aria-current={isActive('/trim') ? "page" : undefined}>
-                <Scissors className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant={isActive('/merge') ? "secondary" : "ghost"} size="icon" aria-label="Go to Merge" title="Merge">
-              <Link to="/merge" aria-current={isActive('/merge') ? "page" : undefined}>
-                <GitMerge className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant={isActive('/analysis') ? "secondary" : "ghost"} size="icon" aria-label="Go to Analysis" title="Analysis">
-              <Link to="/analysis" aria-current={isActive('/analysis') ? "page" : undefined}>
-                <BarChart3 className="h-4 w-4" />
-              </Link>
-            </Button>
-          </nav>
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            </div>
-          ) : summary ? (
-            <AcademicPerformance students={[]} summary={summary} params={params} insights={insights} isMergePage={true} />
-          ) : (
-            <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
-              <Card className="w-full max-w-md text-center">
-                <CardHeader>
-                  <CardTitle className="text-2xl">Merge Datasets</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    Combine multiple JSON datasets for a single analysis or convert a JSON file to plain text.
-                  </p>
-                  <p className="text-muted-foreground">
-                    Use the sidebar to upload your files, merge them, convert to text, and download the result.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+    <AppShell
+      title="Merge & Analyze"
+      icon={<GitMerge className="h-4 w-4 text-primary" />}
+      pathname={location.pathname}
+      sidebar={(
+        <MergeSidebar 
+          onMerge={handleMerge} 
+          onFileChange={handleFileChange}
+          mergedStudentsCount={summary?.totalStudents || 0}
+          downloadPath={downloadPath}
+          downloadFilename={downloadFilename}
+          analysisThresholds={analysisThresholds}
+          onAnalysisThresholdsChange={setAnalysisThresholds}
+          isLoading={isLoading}
+        />
+      )}
+    >
+      {isLoading ? (
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      ) : summary ? (
+        <AcademicPerformance students={[]} summary={summary} params={params} insights={insights} isMergePage={true} />
+      ) : (
+        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
+          <Card className="w-full max-w-md text-center">
+            <CardHeader>
+              <CardTitle className="text-2xl">Merge Datasets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Combine multiple JSON datasets for a single analysis or convert a JSON file to plain text.
+              </p>
+              <p className="text-muted-foreground">
+                Use the sidebar to upload your files, merge them, convert to text, and download the result.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </AppShell>
   );
 }

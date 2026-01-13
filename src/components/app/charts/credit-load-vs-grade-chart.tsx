@@ -35,7 +35,7 @@ export function CreditLoadVsGradeChart({ data }: CreditLoadVsGradeChartProps) {
                 </YAxis>
                 <ChartTooltip
                   cursor={false}
-                  content={<ChartTooltipContent indicator="rect" />}
+                  content={<ChartTooltipContent indicator="dot" />}
                 />
                 <Bar dataKey="avgGpa" fill="var(--color-avgGpa)" radius={4}>
                     <LabelList dataKey="avgGpa" position="top" formatter={(value: number) => value.toFixed(2)} />

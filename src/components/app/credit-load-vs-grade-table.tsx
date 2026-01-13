@@ -36,7 +36,7 @@ export function CreditLoadVsGradeTable({ students, params }: CreditLoadVsGradeTa
           <TableBody>
             {students.map((student) => (
               <TableRow key={student.student_id}>
-                <TableCell>{student.avg_credit_load}</TableCell>
+                <TableCell>{student.avgCreditLoad}</TableCell>
                 <TableCell>{student.cgpa.toFixed(4)}</TableCell>
               </TableRow>
             ))}

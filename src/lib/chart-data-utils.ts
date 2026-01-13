@@ -6,7 +6,7 @@ export function getCgpaDistributionData(students: StudentWithCgpa[]) {
   if (!students || students.length === 0) return [];
 
   const bins: Record<string, number> = {};
-  const binSize = 0.2;
+  const binSize = 0.1;
   
   // --- BINNING (Python-equivalent: floor, not round) ---
   students.forEach(student => {
@@ -40,7 +40,7 @@ export function getCgpaDistributionData(students: StudentWithCgpa[]) {
 export function getHscVsCgpaData(students: StudentWithCgpa[]) {
   if (!students) return [];
   return students.map(student => ({
-    hscGpa: student.hsc_gpa,
+    preGradGpa: Number((((student.hsc_gpa + student.ssc_gpa) / 2).toFixed(2))),
     cgpa: student.cgpa,
   }));
 }
@@ -141,15 +141,27 @@ export function getCreditDistributionChartData(students: StudentWithCgpa[]) {
 export function getPerformanceDistributionChartData(summary: AnalysisSummary) {
     const performanceLabels = ['High', 'Mid', 'Low'];
     const performanceData = summary.performance_distribution || summary.performanceDistribution || {};
+    const normalized = Array.isArray(performanceData)
+        ? performanceData.reduce<Record<string, number>>((acc, entry) => {
+            acc[entry.name] = entry.value;
+            return acc;
+          }, {})
+        : performanceData;
     return performanceLabels.map(label => ({
         name: label,
-        value: performanceData[label] || 0,
+        value: normalized[label] || 0,
     }));
 }
 
 export function getDepartmentDistributionChartData(summary: AnalysisSummary) {
     const departmentData = summary.department_distribution || summary.departmentDistribution || {};
-    return Object.entries(departmentData)
+    const normalized = Array.isArray(departmentData)
+        ? departmentData.reduce<Record<string, number>>((acc, entry) => {
+            acc[entry.name] = entry.value;
+            return acc;
+          }, {})
+        : departmentData;
+    return Object.entries(normalized)
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value);
 }

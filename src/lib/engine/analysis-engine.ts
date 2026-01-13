@@ -1,6 +1,6 @@
 'use client';
 
-import type { Student, StudentWithCgpa, AnalysisSummary, PerformanceGroup, GenerationParams, Grade, Semester, StudentWithSemesterDetails } from "@/lib/types";
+import type { Student, StudentWithCgpa, AnalysisSummary, PerformanceGroup, GenerationParams, Grade, Semester, StudentWithSemesterDetails, DistributionMap, DistributionEntry } from "@/lib/types";
 import { defaultGradeScale, performanceThresholds } from "@/lib/config";
 
 // Analysis flow:
@@ -115,14 +115,32 @@ export class AnalysisEngine {
    */
   private generateInsights(summary: AnalysisSummary): string[] {
     const insights: string[] = [];
-    const { totalStudents, avgCgpa, avgHscGpa, performanceDistribution, departmentDistribution } = summary;
+    const totalStudents = summary.totalStudents ?? 0;
+    const avgCgpa = summary.avgCgpa ?? 0;
+    const avgHscGpa = summary.avgHscGpa ?? 0;
+    const performanceDistribution = summary.performanceDistribution;
+    const departmentDistribution = summary.departmentDistribution;
+
+    const normalizeDistribution = (distribution: DistributionEntry[] | DistributionMap | undefined): DistributionMap => {
+      if (!distribution) return {};
+      if (Array.isArray(distribution)) {
+        return distribution.reduce<DistributionMap>((acc, entry) => {
+          acc[entry.name] = entry.value;
+          return acc;
+        }, {});
+      }
+      return distribution;
+    };
+
+    const performanceDistributionMap = normalizeDistribution(performanceDistribution);
+    const departmentDistributionMap = normalizeDistribution(departmentDistribution);
 
     if (totalStudents === 0) {
       return ["No students in the dataset to analyze."];
     }
 
     // Insight 1: Dominant Performance Group
-    const performanceGroups = Object.entries(performanceDistribution).sort((a, b) => b[1] - a[1]);
+    const performanceGroups = Object.entries(performanceDistributionMap).sort((a, b) => b[1] - a[1]);
     if (performanceGroups.length > 0) {
       const dominantGroup = performanceGroups[0][0];
       const dominantPercentage = ((performanceGroups[0][1] / totalStudents) * 100).toFixed(0);
@@ -137,15 +155,15 @@ export class AnalysisEngine {
     }
 
     // Insight 3: Department Distribution
-    const departments = Object.entries(departmentDistribution).sort((a, b) => b[1] - a[1]);
+    const departments = Object.entries(departmentDistributionMap).sort((a, b) => b[1] - a[1]);
     if (departments.length > 1) {
       const largestDept = departments[0][0];
       insights.push(`The department with the most students is ${largestDept}.`);
     }
 
     // Insight 4: High and Low Performers
-    const highPerformers = performanceDistribution['High'] || 0;
-    const lowPerformers = performanceDistribution['Low'] || 0;
+    const highPerformers = performanceDistributionMap['High'] || 0;
+    const lowPerformers = performanceDistributionMap['Low'] || 0;
     const highPerformerPercentage = ((highPerformers / totalStudents) * 100).toFixed(0);
     const lowPerformerPercentage = ((lowPerformers / totalStudents) * 100).toFixed(0);
 
@@ -255,7 +273,7 @@ export class AnalysisEngine {
       return { totalStudents: 0, avgHscGpa: 0, avgCgpa: 0, departmentDistribution: {}, performanceDistribution: {} };
     }
 
-    const totalHscGpa = students.reduce((sum, s) => sum + s.hscGpa, 0);
+    const totalHscGpa = students.reduce((sum, s) => sum + s.hsc_gpa, 0);
     const totalCgpa = students.reduce((sum, s) => sum + s.cgpa, 0);
     const totalAvgCreditLoad = students.reduce((sum, s) => sum + (s.avgCreditLoad || 0), 0);
     const totalAvgAttendance = students.reduce((sum, s) => sum + (s.avgAttendance || 0), 0);
@@ -266,7 +284,8 @@ export class AnalysisEngine {
     }, {} as { [key: string]: number });
 
     const performanceDistribution = students.reduce((acc, s) => {
-      acc[s.performanceGroup] = (acc[s.performanceGroup] || 0) + 1;
+      const group = s.performanceGroup ?? 'Unknown';
+      acc[group] = (acc[group] || 0) + 1;
       return acc;
     }, {} as { [key: string]: number });
 

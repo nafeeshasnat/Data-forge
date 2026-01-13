@@ -36,7 +36,17 @@ export const TrimDataDialog: React.FC<TrimDataDialogProps> = ({ onTrim, disabled
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label>CGPA Range: {cgpaRange[0].toFixed(2)} - {cgpaRange[1].toFixed(2)}</Label>
-            <ThreeValueSlider min={0} max={4} step={0.1} value={cgpaRange} onValueChange={setCgpaRange} />
+            <ThreeValueSlider
+              min={0}
+              max={4}
+              step={0.1}
+              value={cgpaRange}
+              onValueChange={(value) => {
+                if (Array.isArray(value)) {
+                  setCgpaRange(value);
+                }
+              }}
+            />
           </div>
           <div className="space-y-2">
             <Label>Percentage to Remove: {percentage}%</Label>

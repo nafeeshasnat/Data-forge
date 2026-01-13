@@ -14,8 +14,8 @@ import {
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const binSize = 0.2;
-    const binStart = Number((label - binSize / 2).toFixed(2));
+    const binSize = 0.1;
+    const binStart = Math.max(0, Number((label - binSize / 2).toFixed(2)));
     const binEnd = Number((label + binSize / 2).toFixed(2));
     return (
       <div className="rounded-lg border bg-background p-2 shadow-sm">
@@ -42,6 +42,10 @@ export function CgpaDistributionChart({ students, data }: CgpaDistributionChartP
     }
     return [];
   }, [students, data]);
+
+  React.useEffect(() => {
+    console.log("[CgpaDistributionChart] chartData", chartData);
+  }, [chartData]);
 
   const chartConfig = {
     students: {

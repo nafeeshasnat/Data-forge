@@ -7,6 +7,7 @@ export type Semester = {
 };
 
 export type Student = {
+    id?: string | number;
     student_id: number;
     ssc_gpa: number;
     hsc_gpa: number;
@@ -18,6 +19,20 @@ export type Student = {
 
 export type StudentWithCgpa = Student & {
     cgpa: number;
+    performanceGroup?: PerformanceGroup;
+    avgCreditLoad?: number;
+    avgAttendance?: number;
+    semesterDetails?: Array<{
+        gpa: number;
+        creditLoad: number;
+    }>;
+};
+
+export type StudentWithSemesterDetails = StudentWithCgpa & {
+    semesterDetails: Array<{
+        gpa: number;
+        creditLoad: number;
+    }>;
 };
   
 export type GenerationParams = {
@@ -26,6 +41,8 @@ export type GenerationParams = {
     lowPerformanceChance: number;
     exceptionPercentage: number;
     attendanceImpact: number;
+    failChance?: number;
+    perfectScorerChance?: number;
     preGradDecay?: number;
     preGradScoreInfluence: number;
     creditsPerSubject: number;
@@ -48,11 +65,33 @@ export type GenerationParams = {
 
 export type PerformanceGroup = 'High' | 'Mid' | 'Low';
 
+export type DistributionEntry = { name: string; value: number };
+export type DistributionMap = Record<string, number>;
+
+export type CgpaDistribution = { cgpa: number; students: number };
+export type CreditLoadVsGradeData = { creditLoad: number; avgGpa: number };
+export type AttendanceVsGradeData = { attendance: number; avgGpa: number };
+export type HscVsCgpaDensityData = { preGpa: number; uniCgpa: number; count: number; z: number };
+
 export type AnalysisSummary = {
-  total_students: number;
-  avg_cgpa: number;
-  avg_attendance: number;
-  performance_distribution: { name: string; value: number }[];
-  department_distribution: { name: string; value: number }[];
+  totalStudents?: number;
+  avgCgpa?: number;
+  avgHscGpa?: number;
+  avgCreditLoad?: number;
+  avgAttendance?: number;
+  performanceDistribution?: DistributionEntry[] | DistributionMap;
+  departmentDistribution?: DistributionEntry[] | DistributionMap;
+  total_students?: number;
+  avg_cgpa?: number;
+  avg_attendance?: number;
+  performance_distribution?: DistributionEntry[] | DistributionMap;
+  department_distribution?: DistributionEntry[] | DistributionMap;
   [key: string]: any; // Allow other keys
+};
+
+export type GenerationResult = {
+  data: StudentWithCgpa[];
+  summary: AnalysisSummary;
+  insights: string[];
+  params?: GenerationParams;
 };
