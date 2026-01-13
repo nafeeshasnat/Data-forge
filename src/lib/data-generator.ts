@@ -92,6 +92,7 @@ const getSeededGenerationId = (seed: number | string): number => {
 // Helper functions
 const uniform = (rng: Rng, min: number, max: number) => rng.random() * (max - min) + min;
 const randint = (rng: Rng, min: number, max: number) => Math.floor(rng.random() * (max - min + 1)) + min;
+const FAILING_CGPA_THRESHOLD = 2.1;
 
 function shuffle<T>(rng: Rng, array: T[]): T[] {
   let currentIndex = array.length, randomIndex;
@@ -107,8 +108,8 @@ const choice = <T>(rng: Rng, arr: T[]): T => arr[Math.floor(rng.random() * arr.l
 
 const PERFORMANCE_BOUNDARIES: Record<PerformanceGroup, { ssc: [number, number], hsc: [number, number], uni: [number, number] }> = {
   High: { ssc: [3.6, 5.0], hsc: [3.6, 5.0], uni: [3.2, 4.0] },
-  Mid: { ssc: [2.6, 4.2], hsc: [2.6, 4.2], uni: [2.6, 3.6] },
-  Low: { ssc: [2.0, 3.6], hsc: [2.0, 3.6], uni: [2.0, 3.2] },
+  Mid: { ssc: [2.6, 4.2], hsc: [2.6, 4.2], uni: [2.5, 3.5] },
+  Low: { ssc: [2.0, 3.6], hsc: [2.0, 3.6], uni: [2.0, 2.8] },
 };
 
 function selectPerformanceGroup(rng: Rng, params: GenerationParams): PerformanceGroup {
@@ -225,6 +226,8 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
     const perfectScorerTargetGpa = isPerfectScorer && rng.random() < 0.8
       ? uniform(rng, 3.80, 3.99)
       : 4.0;
+    const failChance = params.failChance ?? 0;
+    const isFailingStudent = !isPerfectScorer && rng.random() < failChance;
 
     const fullSubjectPool = generateSubjectPool(department);
     const studentSubjectPool = shuffle(rng, [...fullSubjectPool]).slice(0, SUBJECT_COUNT);
@@ -287,6 +290,9 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
         semesterGpa = baseGpa + creditImpact(actualCredits, params) * impactScale;
         const attendanceImpact = (attendancePercentage - 82.5) / 17.5 * params.attendanceImpact * impactScale;
         semesterGpa += attendanceImpact;
+        if (!isFailingStudent && semesterGpa < FAILING_CGPA_THRESHOLD) {
+          semesterGpa = FAILING_CGPA_THRESHOLD + uniform(rng, 0, 0.2);
+        }
 
         // Clamp GPA
         semesterGpa = Math.max(0.0, Math.min(4.0, semesterGpa));
@@ -304,7 +310,10 @@ export function generateSyntheticData(params: GenerationParams): Student[] {
       for (const subject of semesterSubjects) {
         let finalGpaForSubject = isPerfectScorer
           ? perfectScorerTargetGpa
-          : Math.max(0, Math.min(4.0, semesterGpa + uniform(rng, -0.10, 0.10)));
+          : Math.max(0, Math.min(4.0, semesterGpa + uniform(rng, -0.22, 0.22)));
+        if (!isFailingStudent && !isPerfectScorer && finalGpaForSubject < FAILING_CGPA_THRESHOLD) {
+          finalGpaForSubject = FAILING_CGPA_THRESHOLD + uniform(rng, 0, 0.2);
+        }
         semesterData[subject] = isPerfectScorer
           ? gradeForTargetGpa(rng, finalGpaForSubject, normalizedGradeScaleTuples)
           : gpaToGrade(finalGpaForSubject, normalizedGradeScaleTuples);
@@ -355,6 +364,8 @@ export function generateSingleStudent(
   const perfectScorerTargetGpa = isPerfectScorer && rng.random() < 0.5
     ? uniform(rng, 3.8, 3.9)
     : 4.0;
+  const failChance = params.failChance ?? 0;
+  const isFailingStudent = !isPerfectScorer && rng.random() < failChance;
 
   const fullSubjectPool = generateSubjectPool(department);
   const studentSubjectPool = shuffle(rng, [...fullSubjectPool]).slice(0, SUBJECT_COUNT);
@@ -420,6 +431,9 @@ export function generateSingleStudent(
       semesterGpa = baseGpa + creditImpact(actualCredits, effectiveParams) * impactScale;
       const attendanceImpact = (attendancePercentage - 82.5) / 17.5 * effectiveParams.attendanceImpact * impactScale;
       semesterGpa += attendanceImpact;
+      if (!isFailingStudent && semesterGpa < FAILING_CGPA_THRESHOLD) {
+        semesterGpa = FAILING_CGPA_THRESHOLD + uniform(rng, 0, 0.2);
+      }
       semesterGpa = Math.max(0.0, Math.min(4.0, semesterGpa));
     }
 
@@ -431,9 +445,12 @@ export function generateSingleStudent(
     };
 
     for (const subject of semesterSubjects) {
-      const finalGpaForSubject = isPerfectScorer
+      let finalGpaForSubject = isPerfectScorer
         ? perfectScorerTargetGpa
-        : Math.max(0, Math.min(4.0, semesterGpa + uniform(rng, -0.1, 0.1)));
+        : Math.max(0, Math.min(4.0, semesterGpa + uniform(rng, -0.22, 0.22)));
+      if (!isFailingStudent && !isPerfectScorer && finalGpaForSubject < FAILING_CGPA_THRESHOLD) {
+        finalGpaForSubject = FAILING_CGPA_THRESHOLD + uniform(rng, 0, 0.2);
+      }
       semesterData[subject] = isPerfectScorer
         ? gradeForTargetGpa(rng, finalGpaForSubject, normalizedGradeScaleTuples)
         : gpaToGrade(finalGpaForSubject, normalizedGradeScaleTuples);

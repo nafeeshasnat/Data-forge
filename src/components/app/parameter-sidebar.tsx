@@ -20,9 +20,11 @@ interface ParameterSidebarProps {
 }
 
 export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, isGenerating, onTrim, isDataPresent }) => {
-  const [params, setParams] = useState<GenerationParams>({ ...defaultGenerationParams });
+  const [params, setParams] = useState<GenerationParams>({
+    ...(thesisBaselineProfiles.naturalDistribution ?? defaultGenerationParams),
+  });
   const gradeOrder: Grade[] = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "D", "F"];
-  const [baselineKey, setBaselineKey] = useState<string>("thesisBaseline");
+  const [baselineKey, setBaselineKey] = useState<string>("naturalDistribution");
 
   const [distributionPoints, setDistributionPoints] = useState([params.lowPerformanceChance * 100, (1 - params.highPerformanceChance) * 100]);
 
@@ -92,6 +94,11 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
       (1 - baseline.highPerformanceChance) * 100,
     ]);
   };
+
+  const handleGenerate = () => {
+    console.log('Generation params:', params);
+    onGenerate(params);
+  };
   
   const lowPercentage = distributionPoints[0];
   const highPercentage = 100 - distributionPoints[1];
@@ -144,6 +151,16 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
                 <div className="space-y-2">
                     <Label>Exception Percentage: {params.exceptionPercentage.toFixed(2)}</Label>
                     <Slider min={0} max={1} step={0.05} value={[params.exceptionPercentage]} onValueChange={(v) => setParams(p => ({...p, exceptionPercentage: v[0]}))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Failing Student Probability: {(params.failChance ?? 0).toFixed(2)}</Label>
+                  <Slider
+                    min={0}
+                    max={0.5}
+                    step={0.05}
+                    value={[params.failChance ?? 0]}
+                    onValueChange={(v) => setParams(p => ({ ...p, failChance: v[0] }))}
+                  />
                 </div>
                 <div className="space-y-2">
                     <Label>Perfect Scorer Chance: {(params.perfectScorerChance ?? 0.8).toFixed(2)}</Label>
@@ -251,7 +268,7 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
           </AccordionItem>
         </Accordion>
         <div className="flex flex-col gap-2">
-          <Button onClick={() => onGenerate(params)} disabled={isGenerating} className="w-full">
+          <Button onClick={handleGenerate} disabled={isGenerating} className="w-full">
             {isGenerating ? 'Generating...' : 'Generate Data'}
           </Button>
           <div className="space-y-2">
