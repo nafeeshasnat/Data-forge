@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BotMessageSquare, GitMerge, Loader2, Scissors, User } from 'lucide-react';
+import { BarChart3, BotMessageSquare, GitMerge, Loader2, Scissors, User } from 'lucide-react';
 import type { GenerationParams, AnalysisSummary } from '@/lib/types';
 import { performanceThresholds } from '@/lib/config';
 import { StudentDatasetContainerSchema } from '@/lib/schemas';
@@ -196,6 +196,11 @@ export default function MergePage() {
             <Button asChild variant={isActive('/merge') ? "secondary" : "ghost"} size="icon" aria-label="Go to Merge" title="Merge">
               <Link to="/merge" aria-current={isActive('/merge') ? "page" : undefined}>
                 <GitMerge className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant={isActive('/analysis') ? "secondary" : "ghost"} size="icon" aria-label="Go to Analysis" title="Analysis">
+              <Link to="/analysis" aria-current={isActive('/analysis') ? "page" : undefined}>
+                <BarChart3 className="h-4 w-4" />
               </Link>
             </Button>
           </nav>

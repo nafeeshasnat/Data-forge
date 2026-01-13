@@ -1,0 +1,28 @@
+Process Flow
+
+Generate Flow (Frontend)
+1) User configures parameters in the sidebar.
+2) Frontend generates synthetic students (generateSyntheticData).
+3) AnalysisEngine computes summary and insights.
+4) Charts render and user can download dataset + metadata.
+
+Merge Flow (Backend)
+1) User uploads multiple JSON files.
+2) Backend stores uploads in tmp/uploads.
+3) merge_and_analyze.py normalizes data and computes summary.
+4) Backend returns summary + download link for merged dataset.
+5) Frontend displays charts based on the returned summary.
+
+Trim Flow (Backend)
+1) User uploads a dataset file to /api/upload.
+2) Backend stores it and returns a filename.
+3) /api/trim runs trim_and_analyze.py with CGPA range/percentage.
+4) Backend returns summary + download filename.
+5) Frontend displays charts and provides download link.
+
+Analysis Flow (Backend)
+1) User uploads a JSON file to /api/analyze.
+2) Backend detects dataset vs single student.
+3) Dataset: runs merge_and_analyze.py; Single: calculates student-level charts.
+4) Frontend renders dataset charts or single-student charts.
+5) Metadata is shown in an accordion when present.

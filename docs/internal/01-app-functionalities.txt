@@ -1,0 +1,38 @@
+DataForge App Functionalities
+
+Overview
+- Generate synthetic student datasets with adjustable distributions.
+- Analyze datasets with charts and summary statistics.
+- Merge multiple datasets and export merged JSON.
+- Trim datasets by CGPA range and percentage and re-analyze.
+- Analyze a single student file or a dataset file.
+- Download datasets and outputs for offline use.
+
+Generate Dataset
+- Configure student population, performance distribution, credit load, grading scale, and analysis thresholds.
+- Generates synthetic student records and computes analysis locally in the frontend.
+- Supports dataset downloads with metadata and reports.
+
+Merge and Analyze
+- Upload multiple dataset JSON files.
+- Backend merges records, normalizes schema, computes analysis, and outputs a merged dataset file.
+- Provides download link for merged dataset.
+
+Trim and Analyze
+- Upload a dataset JSON file.
+- Backend trims dataset by CGPA range and removal percentage.
+- Returns analysis summary and download filename for trimmed dataset.
+
+Single Student
+- Generate one student with adjustable performance and semester settings.
+- Displays GPA trend and attendance/credit correlations.
+- Allows download of the single student JSON.
+
+Analysis Page
+- Upload a dataset (with or without metadata) or a single student JSON.
+- Backend detects dataset type and returns either dataset analysis or single-student charts.
+- Shows dataset metadata details when available.
+
+Outputs
+- Analysis summaries with charts for CGPA distribution, performance distribution, department distribution, and related correlations.
+- Dataset downloads for generated, merged, and trimmed outputs.

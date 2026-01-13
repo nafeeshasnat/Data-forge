@@ -1,0 +1,21 @@
+Structure Rationale
+
+Frontend
+- Pages are organized under src/app/* for route-level components.
+- Shared UI and layouts live in src/components to keep pages thin.
+- Analysis visuals are centralized in AcademicPerformance and charts to avoid duplication.
+
+Backend
+- Express server handles file upload, script execution, and downloads.
+- Python scripts are isolated to keep analysis logic separate from UI and server code.
+- tmp/ is used for upload and generated artifacts with periodic cleanup.
+
+Separation of Concerns
+- Heavy analysis happens in Python or backend helpers.
+- Frontend renders outputs only, using server responses and minimal transforms.
+- Type definitions in src/lib/types.ts keep data contracts explicit.
+
+Scalability Notes
+- Merge and trim are script-based so they can be optimized or replaced independently.
+- API endpoints are coarse-grained to keep frontend logic simple.
+- Metadata handling is defensive to support older datasets without meta.

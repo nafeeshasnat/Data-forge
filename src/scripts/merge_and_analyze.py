@@ -190,8 +190,8 @@ def analyze_data(students_df, plot_points=10, perf_high=3.5, perf_mid=2.0):
     summary = {}
    
 
-    # Total students before any filtering
-    summary['total_students'] = int(students_df['student_id'].nunique())
+    # Total students before any filtering (keep merged row count, no dedupe)
+    summary['total_students'] = int(len(students_df))
 
     # Drop students with NaN CGPA for accurate analysis
     students_df.dropna(subset=['cgpa'], inplace=True)

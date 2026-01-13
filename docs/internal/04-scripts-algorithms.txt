@@ -1,0 +1,32 @@
+Scripts and Algorithms
+
+generate
+- Implemented in src/lib/data-generator.ts.
+- Creates synthetic student records by selecting performance groups, departments, and semester data.
+- Uses configured distributions and grade scale to compute per-semester GPA and grades.
+- Ensures stable IDs by using a local storage increment or deterministic seed.
+
+merge_and_analyze.py
+- Reads multiple dataset files (list of students or {meta, students}).
+- Normalizes schema differences (semester formats, GPA fields, attendance fields).
+- Computes per-student CGPA, average attendance, and per-semester GPA/credit load.
+- Aggregates dataset summaries:
+  - CGPA distribution bins.
+  - Performance group distribution based on thresholds.
+  - Department distribution.
+  - HSC vs CGPA density.
+  - Credit load vs grade and attendance vs grade.
+  - Semester count and credit distributions.
+- Writes a merged dataset file to tmp/ and returns summary + download filename.
+
+trim_and_analyze.py
+- Loads a dataset and removes students based on CGPA range and percentage.
+- Recomputes analysis summaries on the remaining students.
+- Writes a trimmed dataset file to tmp/ and returns summary + download filename.
+
+analyze (server)
+- Implemented in server/server.ts.
+- Detects dataset vs single student input.
+- Dataset: runs merge_and_analyze.py with a single file.
+- Single student: derives GPA trend, credit load vs GPA, and attendance vs grade change.
+- Returns analysis data for presentation only; no frontend calculations.

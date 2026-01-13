@@ -1,0 +1,33 @@
+Backend-Frontend Communication Setup
+
+Routing
+- Frontend routes are handled by react-router-dom.
+- The server serves the compiled frontend from dist and falls back to index.html for SPA routes.
+
+API Access
+- The frontend calls backend endpoints under /api.
+- Vite dev server proxies /api requests to the Express server (see vite.config.ts).
+
+Endpoints (High Level)
+- POST /api/merge
+  - Accepts multiple files.
+  - Runs merge_and_analyze.py and returns summary and download info.
+- POST /api/trim
+  - Accepts a filename (previously uploaded via /api/upload).
+  - Runs trim_and_analyze.py and returns summary and download info.
+- POST /api/upload
+  - Uploads a dataset file for trimming and returns a temporary filename.
+- GET /api/download/:filename
+  - Downloads merged or trimmed dataset files from tmp.
+- POST /api/analyze
+  - Accepts a single file.
+  - Detects dataset vs single student and returns either analysis summary or single-student chart data.
+
+Methodology
+- The frontend only presents results. All dataset-heavy analysis is computed on the backend scripts.
+- API responses are JSON; some responses are transformed to camelCase for frontend usage.
+- The backend writes merged/trimmed outputs to tmp/ and provides download links.
+
+Error Handling
+- Backend returns HTTP 4xx for invalid inputs or missing files, and 5xx for script failures.
+- The frontend surfaces errors with toast notifications and inline error cards.

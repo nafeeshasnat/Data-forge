@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Logo } from "@/components/app/logo";
 import { Link, useLocation } from "react-router-dom";
-import { BotMessageSquare, GitMerge, Scissors, User } from "lucide-react";
+import { BarChart3, BotMessageSquare, GitMerge, Scissors, User } from "lucide-react";
 import { ThreeValueSlider } from "@/components/ui/three-value-slider";
 import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
@@ -363,6 +363,11 @@ export default function TrimPage() {
             <Button asChild variant={isActive('/merge') ? "secondary" : "ghost"} size="icon" aria-label="Go to Merge" title="Merge">
               <Link to="/merge" aria-current={isActive('/merge') ? "page" : undefined}>
                 <GitMerge className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant={isActive('/analysis') ? "secondary" : "ghost"} size="icon" aria-label="Go to Analysis" title="Analysis">
+              <Link to="/analysis" aria-current={isActive('/analysis') ? "page" : undefined}>
+                <BarChart3 className="h-4 w-4" />
               </Link>
             </Button>
           </nav>

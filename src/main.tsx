@@ -7,6 +7,7 @@ import Home from '@/app/page';
 import MergePage from '@/app/merge/page';
 import TrimPage from '@/app/trim/page'; // Import the new Trim page
 import SingleStudentPage from '@/app/single/page';
+import AnalysisPage from '@/app/analysis/page';
 import './index.css';
 
 const router = createBrowserRouter([
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
   {
     path: "/single",
     element: <SingleStudentPage />,
+  },
+  {
+    path: "/analysis",
+    element: <AnalysisPage />,
   },
 ]);
 

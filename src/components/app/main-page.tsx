@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ParameterSidebar } from '@/components/app/parameter-sidebar';
 import { AcademicPerformance } from '@/components/app/academic-performance';
 import { Logo } from '@/components/app/logo';
-import { BotMessageSquare, GitMerge, Download, Scissors, User } from 'lucide-react';
+import { BarChart3, BotMessageSquare, GitMerge, Download, Scissors, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -369,6 +369,11 @@ export function MainPage() {
               <Button asChild variant={isActive('/merge') ? "secondary" : "ghost"} size="icon" aria-label="Go to Merge" title="Merge">
                 <Link to="/merge" aria-current={isActive('/merge') ? "page" : undefined}>
                   <GitMerge className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant={isActive('/analysis') ? "secondary" : "ghost"} size="icon" aria-label="Go to Analysis" title="Analysis">
+                <Link to="/analysis" aria-current={isActive('/analysis') ? "page" : undefined}>
+                  <BarChart3 className="h-4 w-4" />
                 </Link>
               </Button>
             </nav>

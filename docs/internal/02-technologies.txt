@@ -1,0 +1,27 @@
+Technologies Used
+
+Frontend
+- React (Vite) with TypeScript.
+- react-router-dom for client-side routing.
+- Tailwind CSS with shadcn/ui components for UI.
+- Recharts for charts and visualizations.
+- rc-slider for sliders.
+
+Backend
+- Node.js with Express.
+- Multer for file uploads.
+- Child process spawn for Python scripts.
+
+Data/Analysis
+- Python for dataset merge/trim analysis scripts.
+- pandas and numpy for aggregation and statistics (in scripts).
+
+Build and Tooling
+- Vite for frontend dev/build.
+- tsx for server dev workflow.
+- TypeScript for type checking.
+
+Runtime Notes
+- Frontend dev server runs on port 9002 by default.
+- Backend server port is configured in server/server.ts.
+- Vite proxy forwards /api to the backend port in vite.config.ts.
