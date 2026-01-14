@@ -45,6 +45,57 @@ export function getHscVsCgpaData(students: StudentWithCgpa[]) {
   }));
 }
 
+export function getHscVsCgpaDensityData(
+  students: StudentWithCgpa[],
+  xBins = 20,
+  yBins = 20
+) {
+  if (!students || students.length === 0) return [];
+
+  const points = students
+    .map((student) => ({
+      preGradGpa: 0.3 * student.ssc_gpa + 0.7 * student.hsc_gpa,
+      cgpa: student.cgpa,
+    }))
+    .filter((point) => Number.isFinite(point.preGradGpa) && Number.isFinite(point.cgpa));
+
+  if (points.length === 0) return [];
+
+  const minPre = Math.min(...points.map((point) => point.preGradGpa));
+  const maxPre = Math.max(...points.map((point) => point.preGradGpa));
+  const minCgpa = Math.min(...points.map((point) => point.cgpa));
+  const maxCgpa = Math.max(...points.map((point) => point.cgpa));
+
+  const xRange = maxPre - minPre;
+  const yRange = maxCgpa - minCgpa;
+  const xBinWidth = xRange > 0 ? xRange / xBins : 1;
+  const yBinWidth = yRange > 0 ? yRange / yBins : 1;
+
+  const counts = new Map<string, number>();
+  points.forEach((point) => {
+    const xBin = Math.min(
+      xBins - 1,
+      Math.max(0, Math.floor((point.preGradGpa - minPre) / xBinWidth))
+    );
+    const yBin = Math.min(
+      yBins - 1,
+      Math.max(0, Math.floor((point.cgpa - minCgpa) / yBinWidth))
+    );
+    const key = `${xBin}:${yBin}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  });
+
+  return Array.from(counts.entries()).map(([key, count]) => {
+    const [xBin, yBin] = key.split(':').map(Number);
+    return {
+      preGpa: minPre + (xBin + 0.5) * xBinWidth,
+      uniCgpa: minCgpa + (yBin + 0.5) * yBinWidth,
+      count,
+      z: Math.sqrt(count),
+    };
+  });
+}
+
 const calculateGpaFromGrades = (
   semester: Omit<Semester, 'creditHours' | 'attendancePercentage'>,
   gradeScale: Record<Grade, number>

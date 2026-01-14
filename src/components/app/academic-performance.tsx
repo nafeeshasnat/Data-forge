@@ -16,7 +16,7 @@ import { AnalysisInsights } from './analysis-insights';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
 import { SUBJECT_COUNT } from '@/lib/config';
-import { computeCreditLoadVsGradeData, getSemesterCountChartData, getCreditDistributionChartData, getPerformanceDistributionChartData, getDepartmentDistributionChartData } from '@/lib/chart-data-utils';
+import { computeCreditLoadVsGradeData, getSemesterCountChartData, getCreditDistributionChartData, getPerformanceDistributionChartData, getDepartmentDistributionChartData, getHscVsCgpaDensityData } from '@/lib/chart-data-utils';
 
 interface AcademicPerformanceProps {
   students: StudentWithCgpa[];
@@ -80,6 +80,7 @@ function StatsGrid({ summary, params }: { summary: AnalysisSummary, params: Gene
 }
 
 export function AcademicPerformance({ students, summary, params, insights = [], isMergePage = false }: AcademicPerformanceProps) {
+  const shouldUseDensity = isMergePage || students.length > 5000;
   const normalizeDistribution = (distribution: unknown) => {
     if (Array.isArray(distribution)) return distribution as { name: string; value: number }[];
     if (distribution && typeof distribution === 'object') {
@@ -125,12 +126,22 @@ export function AcademicPerformance({ students, summary, params, insights = [], 
       return getPerformanceDistributionChartData(summary);
     }, [summary, isMergePage]);
     
-    const departmentDistributionChartData = useMemo((): { name: string; value: number }[] => {
+  const departmentDistributionChartData = useMemo((): { name: string; value: number }[] => {
       if (isMergePage) {
         return normalizeDistribution(summary.departmentDistribution);
       }
       return getDepartmentDistributionChartData(summary);
     }, [summary, isMergePage]);
+
+  const hscVsCgpaDensityData = useMemo(() => {
+    if (isMergePage) {
+      return summary.hscVsCgpaDensity || [];
+    }
+    if (!shouldUseDensity) {
+      return [];
+    }
+    return getHscVsCgpaDensityData(students);
+  }, [students, summary, isMergePage, shouldUseDensity]);
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -166,8 +177,8 @@ export function AcademicPerformance({ students, summary, params, insights = [], 
           <CardTitle>{isMergePage ? "Pre-Grad GPA vs CGPA" : "Pre-Grad GPA vs CGPA"}</CardTitle>
         </CardHeader>
         <CardContent>
-          {isMergePage ? (
-            <HscVsCgpaDensityChart data={summary.hscVsCgpaDensity} />
+          {shouldUseDensity ? (
+            <HscVsCgpaDensityChart data={hscVsCgpaDensityData} />
           ) : (
             <HscVsCgpaChart students={students} />
           )}

@@ -2,7 +2,6 @@
 'use client';
 
 import * as React from 'react';
-import { generateSyntheticData } from '@/lib/data-generator';
 import { AnalysisEngine } from '@/lib/engine/analysis-engine';
 import type { GenerationParams, Student, StudentWithCgpa, AnalysisSummary } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -201,7 +200,17 @@ export function MainPage() {
     setParams(params);
     setTrimHistory([]);
     try {
-      const generatedStudents = generateSyntheticData(params);
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ params }),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to generate dataset.');
+      }
+      const payload = await response.json();
+      const generatedStudents = payload?.students ?? [];
       const engine = new AnalysisEngine(generatedStudents, params);
       const { data, summary, insights } = engine.run();
 

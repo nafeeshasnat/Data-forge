@@ -69,6 +69,13 @@ const runTrimAndAnalyze = async (filePath: string, minCgpa: number, maxCgpa: num
   return runPythonScript(scriptPath, pythonArgs);
 };
 
+const runGenerateData = async (payload: Record<string, unknown>) => {
+  const scriptPath = path.join(__dirname, '..', '..', 'src', 'scripts', 'generate_data.py');
+  console.log(`[API] Executing python script at: ${scriptPath}`);
+  const pythonArgs = ['--payload', JSON.stringify(payload)];
+  return runPythonScript(scriptPath, pythonArgs);
+};
+
 const cleanupAll = () => {
   cleanupOldFiles(UPLOAD_DIR, MAX_TMP_FILE_AGE_MS);
   cleanupOldFiles(TMP_DIR, MAX_TMP_FILE_AGE_MS);
@@ -305,6 +312,69 @@ router.post('/trim', express.json(), async (req, res) => {
   } catch (error) {
     console.error('[API /api/trim] Failed to start python process:', error);
     return res.status(500).json({ success: false, error: 'Failed to start analysis process' });
+  }
+});
+
+// API endpoint for generating synthetic datasets
+router.post('/generate', express.json(), async (req, res) => {
+  console.log('[API /api/generate] Received request to generate dataset.');
+  const params = req.body?.params ?? req.body;
+  if (!params) {
+    return res.status(400).json({ error: 'No generation parameters provided.' });
+  }
+
+  try {
+    const { code, stdout, stderr } = await runGenerateData({ mode: 'dataset', params });
+    console.log(`[API /api/generate] Python script finished with code ${code}`);
+
+    if (code !== 0) {
+      console.error(`[API /api/generate] Stderr: ${stderr}`);
+      return res.status(500).send(stderr);
+    }
+
+    try {
+      const result = JSON.parse(stdout);
+      return res.json(result);
+    } catch (parseError) {
+      console.error('[API /api/generate] Failed to parse python script output:', parseError);
+      console.error('[API /api/generate] Raw stdout (truncated):', stdout.slice(0, 500));
+      return res.status(500).json({ error: 'Failed to parse script output', details: stdout });
+    }
+  } catch (error) {
+    console.error('[API /api/generate] Failed to start python process:', error);
+    return res.status(500).json({ error: 'Failed to start generation process' });
+  }
+});
+
+// API endpoint for generating a single student dataset
+router.post('/generate-single', express.json(), async (req, res) => {
+  console.log('[API /api/generate-single] Received request to generate single student.');
+  const params = req.body?.params;
+  const options = req.body?.options;
+  if (!params || !options) {
+    return res.status(400).json({ error: 'Missing generation parameters or options.' });
+  }
+
+  try {
+    const { code, stdout, stderr } = await runGenerateData({ mode: 'single', params, options });
+    console.log(`[API /api/generate-single] Python script finished with code ${code}`);
+
+    if (code !== 0) {
+      console.error(`[API /api/generate-single] Stderr: ${stderr}`);
+      return res.status(500).send(stderr);
+    }
+
+    try {
+      const result = JSON.parse(stdout);
+      return res.json(result);
+    } catch (parseError) {
+      console.error('[API /api/generate-single] Failed to parse python script output:', parseError);
+      console.error('[API /api/generate-single] Raw stdout (truncated):', stdout.slice(0, 500));
+      return res.status(500).json({ error: 'Failed to parse script output', details: stdout });
+    }
+  } catch (error) {
+    console.error('[API /api/generate-single] Failed to start python process:', error);
+    return res.status(500).json({ error: 'Failed to start generation process' });
   }
 });
 

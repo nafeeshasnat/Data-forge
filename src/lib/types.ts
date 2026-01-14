@@ -61,6 +61,10 @@ export type GenerationParams = {
         maxSemesters: number;
         drop: number;
     };
+    cgpaTargetHistogram?: Array<{ cgpa: number; students: number }>;
+    cgpaHighTailThreshold?: number;
+    cgpaHighTailBoost?: number;
+    cgpaHighTailWeight?: number;
 };
 
 export type PerformanceGroup = 'High' | 'Mid' | 'Low';

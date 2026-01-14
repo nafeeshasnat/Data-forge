@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { defaultGenerationParams } from "@/lib/config";
-import { generateSingleStudent } from "@/lib/data-generator";
+import type { Student } from "@/lib/types";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import { AppShell } from "@/components/app/app-shell";
 
@@ -37,7 +37,7 @@ export default function SingleStudentPage() {
   const [semesters, setSemesters] = useState<SemesterConfig[]>(
     Array.from({ length: 8 }, defaultSemesterConfig)
   );
-  const [studentData, setStudentData] = useState<ReturnType<typeof generateSingleStudent>["student"] | null>(null);
+  const [studentData, setStudentData] = useState<Student | null>(null);
 
   useEffect(() => {
     setSemesters((prev) => {
@@ -53,23 +53,33 @@ export default function SingleStudentPage() {
     });
   }, [semesterCount]);
 
-  const runGeneration = () => {
-    const { student, semesterSummaries } = generateSingleStudent(
-      {
-        ...defaultGenerationParams,
-        attendanceImpact,
-        maxCreditImpact,
-      },
-      {
-        performanceGroup,
-        semesterCount,
-        averageCredits,
-        attendanceImpact,
-        maxCreditImpact,
-      }
-    );
-    setStudentData(student);
-    setSemesters(semesterSummaries);
+  const runGeneration = async () => {
+    const response = await fetch('/api/generate-single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        params: {
+          ...defaultGenerationParams,
+          attendanceImpact,
+          maxCreditImpact,
+        },
+        options: {
+          performanceGroup,
+          semesterCount,
+          averageCredits,
+          attendanceImpact,
+          maxCreditImpact,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = await response.json();
+    setStudentData(payload?.student ?? null);
+    setSemesters(payload?.semesterSummaries ?? []);
   };
 
   const handleDownload = () => {

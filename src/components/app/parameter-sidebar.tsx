@@ -117,8 +117,8 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
                 <div className="space-y-2">
                     <Label htmlFor="numStudents">Number of Students</Label>
                     <div className="flex items-center gap-2">
-                        <Slider id="numStudents" name="numStudents" min={100} max={5000} step={100} value={[params.numStudents]} onValueChange={(v) => setParams(p => ({...p, numStudents: v[0]}))} />
-                        <Input type="number" name="numStudents" className="w-24 h-8" value={params.numStudents} onChange={handleInputChange} step={100}/>
+                        <Slider id="numStudents" name="numStudents" min={100} max={20000} step={100} value={[params.numStudents]} onValueChange={(v) => setParams(p => ({...p, numStudents: v[0]}))} />
+                        <Input type="number" name="numStudents" className="w-24 h-8" value={params.numStudents} onChange={handleInputChange} step={100} max={20000} />
                     </div>
                 </div>
                 <div className="space-y-2">
@@ -153,7 +153,7 @@ export const ParameterSidebar: React.FC<ParameterSidebarProps> = ({ onGenerate, 
                     <Slider min={0} max={1} step={0.05} value={[params.exceptionPercentage]} onValueChange={(v) => setParams(p => ({...p, exceptionPercentage: v[0]}))} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Failing Student Probability: {(params.failChance ?? 0).toFixed(2)}</Label>
+                  <Label>Failing Students (CGPA &lt; 2.0): {(params.failChance ?? 0).toFixed(2)}</Label>
                   <Slider
                     min={0}
                     max={0.5}
