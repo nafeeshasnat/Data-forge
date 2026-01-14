@@ -12,10 +12,13 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, binSize, minCgpa }: any) => {
   if (active && payload && payload.length) {
-    const binSize = 0.1;
-    const binStart = Math.max(0, Number((label - binSize / 2).toFixed(2)));
+    const numericLabel = Number(label);
+    const isFirstBin = Number.isFinite(minCgpa) && numericLabel === minCgpa;
+    const binStart = isFirstBin
+      ? 0
+      : Math.max(0, Number((numericLabel - binSize / 2).toFixed(2)));
     const binEnd = Number((label + binSize / 2).toFixed(2));
     return (
       <div className="rounded-lg border bg-background p-2 shadow-sm">
@@ -42,6 +45,24 @@ export function CgpaDistributionChart({ students, data }: CgpaDistributionChartP
     }
     return [];
   }, [students, data]);
+
+  const minCgpa = React.useMemo(() => {
+    if (!chartData.length) return 0;
+    return Math.min(...chartData.map((entry) => entry.cgpa));
+  }, [chartData]);
+
+  const binSize = React.useMemo(() => {
+    if (chartData.length < 2) return 0.1;
+    const sorted = [...chartData].sort((a, b) => a.cgpa - b.cgpa);
+    let minStep = Number.POSITIVE_INFINITY;
+    for (let i = 1; i < sorted.length; i += 1) {
+      const step = sorted[i].cgpa - sorted[i - 1].cgpa;
+      if (step > 0 && step < minStep) {
+        minStep = step;
+      }
+    }
+    return Number.isFinite(minStep) ? Number(minStep.toFixed(2)) : 0.1;
+  }, [chartData]);
 
   React.useEffect(() => {
     console.log("[CgpaDistributionChart] chartData", chartData);
@@ -85,7 +106,7 @@ export function CgpaDistributionChart({ students, data }: CgpaDistributionChartP
             >
                  <Label value="Number of Students" angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
             </YAxis>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip binSize={binSize} minCgpa={minCgpa} />} />
             <Line 
                 dataKey="students" 
                 type="monotone" 

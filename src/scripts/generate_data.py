@@ -12,6 +12,7 @@ Payload schema:
 import argparse
 import json
 import math
+import os
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Tuple
@@ -105,6 +106,9 @@ PERFORMANCE_BOUNDARIES = {
     "Mid": {"ssc": (2.6, 4.2), "hsc": (2.6, 4.2), "uni": (2.5, 3.5)},
     "Low": {"ssc": (2.0, 3.6), "hsc": (2.0, 3.6), "uni": (2.0, 2.8)},
 }
+
+GENERATION_STRIDE = 10000
+GENERATION_STATE_PATH = os.path.join(os.path.dirname(__file__), ".generation_state.json")
 
 
 
@@ -510,6 +514,33 @@ def get_unseeded_generation_id() -> int:
     return int(math.floor(rng.random() * 1000) + 101)
 
 
+def load_generation_state() -> int:
+    try:
+        with open(GENERATION_STATE_PATH, "r", encoding="utf-8") as state_file:
+            data = json.load(state_file)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return -1
+    value = data.get("next_generation_id")
+    return value if isinstance(value, int) else -1
+
+
+def save_generation_state(next_generation_id: int) -> None:
+    try:
+        with open(GENERATION_STATE_PATH, "w", encoding="utf-8") as state_file:
+            json.dump({"next_generation_id": next_generation_id}, state_file)
+    except OSError:
+        pass
+
+
+def resolve_generation_id(seed: Any) -> Tuple[int, bool]:
+    if seed is not None and seed != "":
+        return get_seeded_generation_id(seed), False
+    persisted_next = load_generation_state()
+    if persisted_next >= 0:
+        return persisted_next, True
+    return get_unseeded_generation_id(), True
+
+
 def generate_synthetic_data(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     students: List[Dict[str, Any]] = []
     subject_count = int(params.get("subjectCount") or params.get("SUBJECT_COUNT") or 60)
@@ -519,15 +550,13 @@ def generate_synthetic_data(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     min_birth_year = max_birth_year - 12
     rng = Rng(params.get("seed"))
 
-    if params.get("seed") is not None and params.get("seed") != "":
-        generation_id = get_seeded_generation_id(params.get("seed"))
-    else:
-        generation_id = get_unseeded_generation_id()
+    generation_id, should_persist_generation = resolve_generation_id(params.get("seed"))
 
     num_students = int(params.get("numStudents", 0))
     for i in range(1, num_students + 1):
-        student_in_generation_id = i
-        student_id = (generation_id * 10000) + student_in_generation_id
+        generation_offset = (i - 1) // GENERATION_STRIDE
+        student_in_generation_id = ((i - 1) % GENERATION_STRIDE) + 1
+        student_id = ((generation_id + generation_offset) * GENERATION_STRIDE) + student_in_generation_id
 
         performance_group = select_performance_group(rng, params)
         department = choice(rng, DEPARTMENTS)
@@ -624,6 +653,9 @@ def generate_synthetic_data(params: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     nudge_cgpa_distribution(students, params)
     enforce_fail_percentage(students, params)
+    if should_persist_generation and num_students > 0:
+        blocks_used = int(math.ceil(num_students / float(GENERATION_STRIDE)))
+        save_generation_state(generation_id + blocks_used)
     return students
 
 
@@ -634,11 +666,8 @@ def generate_single_student(params: Dict[str, Any], options: Dict[str, Any]) -> 
     max_birth_year = current_year - 30
     min_birth_year = max_birth_year - 12
 
-    if params.get("seed") is not None and params.get("seed") != "":
-        generation_id = get_seeded_generation_id(params.get("seed"))
-    else:
-        generation_id = get_unseeded_generation_id()
-    student_id = (generation_id * 10000) + 1
+    generation_id, should_persist_generation = resolve_generation_id(params.get("seed"))
+    student_id = (generation_id * GENERATION_STRIDE) + 1
 
     performance_group = options.get("performanceGroup", "Mid")
     department = choice(rng, DEPARTMENTS)
@@ -742,6 +771,9 @@ def generate_single_student(params: Dict[str, Any], options: Dict[str, Any]) -> 
             "attendancePercentage": attendance_percentage,
             "gpa": round_two(semester_gpa),
         })
+
+    if should_persist_generation:
+        save_generation_state(generation_id + 1)
 
     return {
         "student": {
