@@ -126,7 +126,6 @@ export const thesisBaselineProfiles: Record<string, GenerationParams> = {
     cgpaHighTailThreshold: 3.3,
     cgpaHighTailBoost: 0.15,
     cgpaHighTailWeight: 1.25,
-    seed: "thesis-natural-01",
   },
 };
 

@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { defaultGenerationParams } from "@/lib/config";
+import { Input } from "@/components/ui/input";
+import { defaultGenerationParams, thesisBaselineProfiles } from "@/lib/config";
 import type { Student } from "@/lib/types";
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ReferenceLine, Scatter, ScatterChart, XAxis, YAxis } from "recharts";
 import { AppShell } from "@/components/app/app-shell";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 type PerformanceGroup = "High" | "Mid" | "Low";
 
@@ -21,21 +23,50 @@ type SemesterConfig = {
   gpa: number;
 };
 
-const defaultSemesterConfig = (): SemesterConfig => ({
-  creditHours: defaultGenerationParams.stdCredit,
+const gpaTrendConfig = {
+  gpa: {
+    label: "GPA",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
+
+const creditLoadConfig = {
+  gpa: {
+    label: "CGPA",
+    color: "#dc2626",
+  },
+} satisfies ChartConfig;
+
+const attendanceConfig = {
+  attendance: {
+    label: "Attendance %",
+    color: "#7c3aed",
+  },
+  gradeChangeRate: {
+    label: "Grade Change %",
+    color: "#a78bfa",
+  },
+} satisfies ChartConfig;
+
+const buildSemesterConfig = (creditHours: number): SemesterConfig => ({
+  creditHours,
   attendancePercentage: 80,
   gpa: 3.0,
 });
 
 export default function SingleStudentPage() {
   const location = useLocation();
+  const initialBaseline = thesisBaselineProfiles.naturalDistribution ?? defaultGenerationParams;
   const [performanceGroup, setPerformanceGroup] = useState<PerformanceGroup>("Mid");
+  const [baselineKey, setBaselineKey] = useState<string>("naturalDistribution");
+  const [generationParams, setGenerationParams] = useState(initialBaseline);
+  const [seed, setSeed] = useState("");
   const [semesterCount, setSemesterCount] = useState(8);
-  const [averageCredits, setAverageCredits] = useState(defaultGenerationParams.stdCredit);
-  const [maxCreditImpact, setMaxCreditImpact] = useState(defaultGenerationParams.maxCreditImpact);
-  const [attendanceImpact, setAttendanceImpact] = useState(defaultGenerationParams.attendanceImpact);
+  const [averageCredits, setAverageCredits] = useState(initialBaseline.stdCredit);
+  const [maxCreditImpact, setMaxCreditImpact] = useState(initialBaseline.maxCreditImpact);
+  const [attendanceImpact, setAttendanceImpact] = useState(initialBaseline.attendanceImpact);
   const [semesters, setSemesters] = useState<SemesterConfig[]>(
-    Array.from({ length: 8 }, defaultSemesterConfig)
+    Array.from({ length: 8 }, () => buildSemesterConfig(initialBaseline.stdCredit))
   );
   const [studentData, setStudentData] = useState<Student | null>(null);
 
@@ -44,7 +75,7 @@ export default function SingleStudentPage() {
       const next = [...prev];
       if (semesterCount > next.length) {
         for (let i = next.length; i < semesterCount; i += 1) {
-          next.push(defaultSemesterConfig());
+          next.push(buildSemesterConfig(generationParams.stdCredit));
         }
       } else if (semesterCount < next.length) {
         next.length = semesterCount;
@@ -53,15 +84,25 @@ export default function SingleStudentPage() {
     });
   }, [semesterCount]);
 
+  const applyBaseline = () => {
+    const baseline = thesisBaselineProfiles[baselineKey] ?? defaultGenerationParams;
+    setGenerationParams(baseline);
+    setAverageCredits(baseline.stdCredit);
+    setMaxCreditImpact(baseline.maxCreditImpact);
+    setAttendanceImpact(baseline.attendanceImpact);
+  };
+
   const runGeneration = async () => {
+    const trimmedSeed = seed.trim();
     const response = await fetch('/api/generate-single', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         params: {
-          ...defaultGenerationParams,
+          ...generationParams,
           attendanceImpact,
           maxCreditImpact,
+          ...(trimmedSeed ? { seed: trimmedSeed } : {}),
         },
         options: {
           performanceGroup,
@@ -144,6 +185,21 @@ export default function SingleStudentPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="baseline-profile">Baseline Profile</Label>
+                <select
+                  id="baseline-profile"
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  value={baselineKey}
+                  onChange={(event) => setBaselineKey(event.target.value)}
+                >
+                  <option value="thesisBaseline">Thesis Baseline</option>
+                  <option value="naturalDistribution">Natural Distribution</option>
+                </select>
+                <Button type="button" variant="outline" onClick={applyBaseline} className="w-full">
+                  Load Baseline
+                </Button>
+              </div>
+              <div className="space-y-2">
                 <Label>Performance Group</Label>
                 <RadioGroup
                   value={performanceGroup}
@@ -159,6 +215,15 @@ export default function SingleStudentPage() {
                 </RadioGroup>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="seed">Seed (optional)</Label>
+                <Input
+                  id="seed"
+                  value={seed}
+                  onChange={(event) => setSeed(event.target.value)}
+                  placeholder="e.g. run-2024-09-21"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label>Semesters: {semesterCount}</Label>
                 <Slider
                   min={2}
@@ -171,8 +236,8 @@ export default function SingleStudentPage() {
               <div className="space-y-2">
                 <Label>Average Credits: {averageCredits}</Label>
                 <Slider
-                  min={defaultGenerationParams.minCredit}
-                  max={defaultGenerationParams.maxCredit}
+                  min={generationParams.minCredit}
+                  max={generationParams.maxCredit}
                   step={1}
                   value={[averageCredits]}
                   onValueChange={(value) => setAverageCredits(value[0])}
@@ -221,17 +286,18 @@ export default function SingleStudentPage() {
           <CardTitle>GPA Trend</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={gpaTrendData}>
-                <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" />
-                <YAxis domain={[0, 4]} />
-                <Tooltip />
-                <Line type="monotone" dataKey="gpa" stroke="hsl(var(--primary))" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartContainer config={gpaTrendConfig} className="h-72 w-full">
+            <LineChart data={gpaTrendData}>
+              <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" />
+              <YAxis domain={[0, 4]} />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+              />
+              <Line type="monotone" dataKey="gpa" stroke="var(--color-gpa)" strokeWidth={2} />
+            </LineChart>
+          </ChartContainer>
         </CardContent>
       </Card>
       <div className="grid gap-4 md:grid-cols-2">
@@ -240,18 +306,19 @@ export default function SingleStudentPage() {
             <CardTitle>Credits vs CGPA</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart>
-                  <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
-                  <XAxis type="number" dataKey="credits" name="Credits" />
-                  <YAxis type="number" dataKey="gpa" name="CGPA" domain={[0, 4]} />
-                  <Tooltip />
-                  <ReferenceLine x={averageCredits} stroke="#dc2626" strokeDasharray="2 4" />
-                  <Scatter data={creditLoadData} fill="#dc2626" />
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartContainer config={creditLoadConfig} className="h-64 w-full">
+              <ScatterChart>
+                <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
+                <XAxis type="number" dataKey="credits" name="Credits" />
+                <YAxis type="number" dataKey="gpa" name="CGPA" domain={[0, 4]} />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dot" />}
+                />
+                <ReferenceLine x={averageCredits} stroke="var(--color-gpa)" strokeDasharray="2 4" />
+                <Scatter data={creditLoadData} fill="var(--color-gpa)" />
+              </ScatterChart>
+            </ChartContainer>
           </CardContent>
         </Card>
         <Card>
@@ -259,44 +326,45 @@ export default function SingleStudentPage() {
             <CardTitle>Attendance & Grade Change Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={attendanceData}>
-                  <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" />
-                  <YAxis
-                    yAxisId="attendance"
-                    domain={[0, 100]}
-                    tickFormatter={(value) => `${value}%`}
-                  />
-                  <YAxis
-                    yAxisId="grade"
-                    orientation="right"
-                    domain={["dataMin - 50", "dataMax + 50"]}
-                    tickFormatter={(value) => `${value}%`}
-                  />
-                  <Tooltip />
-                  <Line
-                    yAxisId="attendance"
-                    type="monotone"
-                    dataKey="attendance"
-                    stroke="#7c3aed"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
-                  <Line
-                    yAxisId="grade"
-                    type="monotone"
-                    dataKey="gradeChangeRate"
-                    stroke="#a78bfa"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartContainer config={attendanceConfig} className="h-64 w-full">
+              <LineChart data={attendanceData}>
+                <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" />
+                <YAxis
+                  yAxisId="attendance"
+                  domain={[0, 100]}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <YAxis
+                  yAxisId="grade"
+                  orientation="right"
+                  domain={["dataMin - 50", "dataMax + 50"]}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dot" />}
+                />
+                <Line
+                  yAxisId="attendance"
+                  type="monotone"
+                  dataKey="attendance"
+                  stroke="var(--color-attendance)"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  yAxisId="grade"
+                  type="monotone"
+                  dataKey="gradeChangeRate"
+                  stroke="var(--color-gradeChangeRate)"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
