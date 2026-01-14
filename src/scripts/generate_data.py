@@ -200,8 +200,42 @@ def get_exceptional_performance_group(rng: Rng, original_group: str) -> str:
     return "High" if rng.random() < 0.5 else "Low"
 
 
-def generate_gpa_in_bounds(rng: Rng, group: str, gpa_type: str) -> float:
-    min_value, max_value = PERFORMANCE_BOUNDARIES[group][gpa_type]
+def get_non_overlapping_boundaries(
+    boundaries: Dict[str, Dict[str, Tuple[float, float]]],
+    epsilon: float = 0.01,
+) -> Dict[str, Dict[str, Tuple[float, float]]]:
+    ordered_groups = ["Low", "Mid", "High"]
+    non_overlapping: Dict[str, Dict[str, Tuple[float, float]]] = {}
+    for group in ordered_groups:
+        non_overlapping[group] = {}
+
+    for gpa_type in boundaries[ordered_groups[0]]:
+        low_min, low_max = boundaries["Low"][gpa_type]
+        mid_min, mid_max = boundaries["Mid"][gpa_type]
+        high_min, high_max = boundaries["High"][gpa_type]
+
+        safe_low_max = min(low_max, mid_min - epsilon)
+        if safe_low_max < low_min:
+            safe_low_max = low_min
+
+        safe_mid_max = min(mid_max, high_min - epsilon)
+        if safe_mid_max < mid_min:
+            safe_mid_max = mid_min
+
+        non_overlapping["Low"][gpa_type] = (low_min, safe_low_max)
+        non_overlapping["Mid"][gpa_type] = (mid_min, safe_mid_max)
+        non_overlapping["High"][gpa_type] = (high_min, high_max)
+
+    return non_overlapping
+
+
+def generate_gpa_in_bounds(
+    rng: Rng,
+    group: str,
+    gpa_type: str,
+    boundaries: Dict[str, Dict[str, Tuple[float, float]]] = PERFORMANCE_BOUNDARIES,
+) -> float:
+    min_value, max_value = boundaries[group][gpa_type]
     return uniform(rng, min_value, max_value)
 
 
@@ -671,8 +705,9 @@ def generate_single_student(params: Dict[str, Any], options: Dict[str, Any]) -> 
 
     performance_group = options.get("performanceGroup", "Mid")
     department = choice(rng, DEPARTMENTS)
-    ssc_gpa = round_two(generate_gpa_in_bounds(rng, performance_group, "ssc"))
-    hsc_gpa = round_two(generate_gpa_in_bounds(rng, performance_group, "hsc"))
+    non_overlapping_boundaries = get_non_overlapping_boundaries(PERFORMANCE_BOUNDARIES)
+    ssc_gpa = round_two(generate_gpa_in_bounds(rng, performance_group, "ssc", non_overlapping_boundaries))
+    hsc_gpa = round_two(generate_gpa_in_bounds(rng, performance_group, "hsc", non_overlapping_boundaries))
     pre_grad_uni_gpa = ((ssc_gpa / 5.0) + (hsc_gpa / 5.0)) / 2 * 4.0
     perfect_chance = float(params.get("perfectScorerChance", 0.8))
     is_perfect = performance_group == "High" and pre_grad_uni_gpa > 3.8 and rng.random() < perfect_chance
